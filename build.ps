@@ -1,0 +1,12 @@
+[CmdletBinding()]
+param(
+    [switch]$NoBump,
+    [switch]$NoZip,
+    [string]$VersionOverride
+)
+
+$ScriptDir = $PSScriptRoot
+if (-not $ScriptDir) { $ScriptDir = Get-Location }
+$BuildPs1 = Join-Path $ScriptDir "build.ps1"
+
+& $BuildPs1 -NoBump:$NoBump -NoZip:$NoZip -VersionOverride:$VersionOverride

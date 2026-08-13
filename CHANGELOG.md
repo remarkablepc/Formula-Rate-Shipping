@@ -1,0 +1,6 @@
+# Changelog
+
+## v0.62.0 - 2026-08-12
+- Fixed JavaScript syntax error in Section 2 (`buildLocMainRow` unquoted string concatenation) blocking creation of new location, user & environment rules.
+- Migrated plugin versioning system to standard 3-digit SemVer (`major.feature.patch`).
+- Updated `build.ps1` script to match MBF Pack and Ship architecture with full SemVer bumping support (`-BumpMajor`, `-BumpMinor`, `-BumpPatch`), dry-run mode (`-DryRun`), automatic `CHANGELOG.md` updating, PHP syntax linting, and automatic local WordPress sync (`c:\xampp\htdocs\wp\wp-content\plugins\formula-rate-shipping`).
