@@ -8,7 +8,7 @@
 
  * Description: Calculate dynamic shipping and handling rates using custom formulas, priority item rules (Categories, Tags & Attributes), location overrides, and an interactive real-time tester.
 
- * Version: 0.68.1
+ * Version: 0.69.0
 
  * Author:      RemarkablePC
 
@@ -1632,6 +1632,127 @@ class Formula_Evaluator {
 			}
 
 			return '0';
+		}, $formula );
+
+		// Resolve [table on="..." tiers="..."]
+		$formula = preg_replace_callback( '/\[table\s+([^\]]+)\]/i', function( $matches ) use ( $contents, $context ) {
+			$attr_str = $matches[1];
+			$on_expr = '';
+			if ( preg_match( '/on\s*=\s*[\'"]([^\'"]+)[\'"]/i', $attr_str, $m ) ) {
+				$on_expr = $m[1];
+			} elseif ( preg_match( '/on\s*=\s*([^\s\]]+)/i', $attr_str, $m ) ) {
+				$on_expr = $m[1];
+			}
+
+			$tiers_str = '';
+			if ( preg_match( '/tiers\s*=\s*[\'"]([^\'"]+)[\'"]/i', $attr_str, $m ) ) {
+				$tiers_str = $m[1];
+			}
+
+			if ( empty( $on_expr ) || empty( $tiers_str ) ) {
+				return '0';
+			}
+
+			try {
+				$val = floatval( self::evaluate( $on_expr, $contents, $context ) );
+			} catch ( Exception $e ) {
+				$val = 0.0;
+			}
+
+			$raw_tiers = preg_split( '/[,;]+/', $tiers_str );
+			$parsed_tiers = array();
+			$default_cost = null;
+
+			foreach ( $raw_tiers as $rt ) {
+				$rt = trim( $rt );
+				if ( empty( $rt ) ) continue;
+				$parts = explode( ':', $rt );
+				if ( count( $parts ) >= 2 ) {
+					$thresh_str = strtolower( trim( $parts[0] ) );
+					$cost = floatval( trim( $parts[1] ) );
+					if ( 'default' === $thresh_str || '*' === $thresh_str || 'else' === $thresh_str ) {
+						$default_cost = $cost;
+					} else {
+						$num_thresh = floatval( $thresh_str );
+						$parsed_tiers[ (string) $num_thresh ] = $cost;
+					}
+				}
+			}
+
+			uksort( $parsed_tiers, function( $a, $b ) {
+				return floatval( $a ) <=> floatval( $b );
+			});
+
+			$matched_cost = null;
+			foreach ( $parsed_tiers as $thresh => $cost ) {
+				if ( $val <= floatval( $thresh ) ) {
+					$matched_cost = $cost;
+					break;
+				}
+			}
+
+			if ( null === $matched_cost ) {
+				if ( null !== $default_cost ) {
+					$matched_cost = $default_cost;
+				} elseif ( ! empty( $parsed_tiers ) ) {
+					$matched_cost = end( $parsed_tiers );
+				} else {
+					$matched_cost = 0.0;
+				}
+			}
+
+			return (string) $matched_cost;
+		}, $formula );
+
+		// Resolve [scale on="..." base_cost=X base_units=Y rate=Z step=W]
+		$formula = preg_replace_callback( '/\[scale\s+([^\]]+)\]/i', function( $matches ) use ( $contents, $context ) {
+			$attr_str = $matches[1];
+			$on_expr = '';
+			if ( preg_match( '/on\s*=\s*[\'"]([^\'"]+)[\'"]/i', $attr_str, $m ) ) {
+				$on_expr = $m[1];
+			} elseif ( preg_match( '/on\s*=\s*([^\s\]]+)/i', $attr_str, $m ) ) {
+				$on_expr = $m[1];
+			}
+
+			if ( empty( $on_expr ) ) {
+				return '0';
+			}
+
+			$base_cost = 0.0;
+			if ( preg_match( '/base_cost\s*=\s*([0-9\.\-]+)/i', $attr_str, $m ) ) {
+				$base_cost = floatval( $m[1] );
+			}
+
+			$base_units = 1.0;
+			if ( preg_match( '/base_units\s*=\s*([0-9\.\-]+)/i', $attr_str, $m ) ) {
+				$base_units = floatval( $m[1] );
+			}
+
+			$rate = 0.0;
+			if ( preg_match( '/rate\s*=\s*([0-9\.\-]+)/i', $attr_str, $m ) ) {
+				$rate = floatval( $m[1] );
+			}
+
+			$step = 1.0;
+			if ( preg_match( '/step\s*=\s*([0-9\.]+)/i', $attr_str, $m ) ) {
+				$step = max( 0.0001, floatval( $m[1] ) );
+			}
+
+			try {
+				$val = floatval( self::evaluate( $on_expr, $contents, $context ) );
+			} catch ( Exception $e ) {
+				$val = 0.0;
+			}
+
+			if ( $val <= $base_units ) {
+				return (string) $base_cost;
+			}
+
+			$extra = $val - $base_units;
+			$steps = ceil( $extra / $step );
+			$total_cost = $base_cost + ( $steps * $rate );
+
+			return (string) $total_cost;
 		}, $formula );
 
 
@@ -8602,6 +8723,100 @@ function buildLocFormulaRow(idx, ship, hand, isEnabled, bgClass) {
 								formula = formula.replace(/\[(?:notice|message|warning)\s*=\s*['"][^'"]+['"](?:\s+position\s*=\s*['"][^'"]+['"])?\]/gi, '0');
 								formula = formula.replace(/\[(?:fee|discount|sale)[^\]]*\]/gi, '0');
 
+								// Resolve [table on="..." tiers="..."]
+								formula = formula.replace(/\[table\s+([^\]]+)\]/gi, function(match, attributesStr) {
+									var onExpr = '';
+									var tiersStr = '';
+									var onMatch = attributesStr.match(/on\s*=\s*(?:['"]([^'"]+)['"]|([^\s\]]+))/i);
+									if (onMatch) onExpr = onMatch[1] || onMatch[2] || '';
+									var tiersMatch = attributesStr.match(/tiers\s*=\s*['"]([^'"]+)['"]/i);
+									if (tiersMatch) tiersStr = tiersMatch[1] || '';
+
+									if (!onExpr || !tiersStr) return '0';
+
+									var val = parseFloat(evaluateFormula(onExpr)) || 0.0;
+									var rawTiers = tiersStr.split(/[,;]+/);
+									var parsedTiers = [];
+									var defaultCost = null;
+
+									rawTiers.forEach(function(rt) {
+										rt = rt.trim();
+										if (!rt) return;
+										var parts = rt.split(':');
+										if (parts.length >= 2) {
+											var threshStr = parts[0].trim().toLowerCase();
+											var cost = parseFloat(parts[1].trim()) || 0.0;
+											if (threshStr === 'default' || threshStr === '*' || threshStr === 'else') {
+												defaultCost = cost;
+											} else {
+												var numThresh = parseFloat(threshStr);
+												if (!isNaN(numThresh)) {
+													parsedTiers.push({ thresh: numThresh, cost: cost });
+												}
+											}
+										}
+									});
+
+									parsedTiers.sort(function(a, b) { return a.thresh - b.thresh; });
+
+									var matchedCost = null;
+									for (var i = 0; i < parsedTiers.length; i++) {
+										if (val <= parsedTiers[i].thresh) {
+											matchedCost = parsedTiers[i].cost;
+											break;
+										}
+									}
+
+									if (matchedCost === null) {
+										if (defaultCost !== null) {
+											matchedCost = defaultCost;
+										} else if (parsedTiers.length > 0) {
+											matchedCost = parsedTiers[parsedTiers.length - 1].cost;
+										} else {
+											matchedCost = 0.0;
+										}
+									}
+
+									return String(matchedCost);
+								});
+
+								// Resolve [scale on="..." base_cost=X base_units=Y rate=Z step=W]
+								formula = formula.replace(/\[scale\s+([^\]]+)\]/gi, function(match, attributesStr) {
+									var onExpr = '';
+									var onMatch = attributesStr.match(/on\s*=\s*(?:['"]([^'"]+)['"]|([^\s\]]+))/i);
+									if (onMatch) onExpr = onMatch[1] || onMatch[2] || '';
+									if (!onExpr) return '0';
+
+									var baseCost = 0.0;
+									var baseUnits = 1.0;
+									var rate = 0.0;
+									var step = 1.0;
+
+									var bcMatch = attributesStr.match(/base_cost\s*=\s*([0-9.\-]+)/i);
+									if (bcMatch) baseCost = parseFloat(bcMatch[1]) || 0.0;
+
+									var buMatch = attributesStr.match(/base_units\s*=\s*([0-9.\-]+)/i);
+									if (buMatch) baseUnits = parseFloat(buMatch[1]) || 0.0;
+
+									var rMatch = attributesStr.match(/rate\s*=\s*([0-9.\-]+)/i);
+									if (rMatch) rate = parseFloat(rMatch[1]) || 0.0;
+
+									var sMatch = attributesStr.match(/step\s*=\s*([0-9.]+)/i);
+									if (sMatch) step = Math.max(0.0001, parseFloat(sMatch[1]) || 1.0);
+
+									var val = parseFloat(evaluateFormula(onExpr)) || 0.0;
+
+									if (val <= baseUnits) {
+										return String(baseCost);
+									}
+
+									var extra = val - baseUnits;
+									var steps = Math.ceil(extra / step);
+									var totalCost = baseCost + (steps * rate);
+
+									return String(totalCost);
+								});
+
 
 
 								// Resolve [product="X"] - returns 1 if any item name, SKU, or product number contains X
@@ -11281,6 +11496,31 @@ function buildLocFormulaRow(idx, ship, hand, isEnabled, bgClass) {
 									</div>
 								</details>
 
+								<!-- Accordion 7: Tiered Step Tables & Incremental Scales -->
+								<details class="formula-help-accordion" style="margin-bottom: 12px; background: #ffffff; border: 1px solid #cbd5e1; border-radius: 8px; overflow: hidden;">
+									<summary style="padding: 12px 16px; font-weight: 700; font-size: 14px; color: #0f172a; background: #f8fafc; cursor: pointer; user-select: none;">📊 Tiered Step Tables & Incremental Scales ([table] & [scale])</summary>
+									<div style="padding: 16px; border-top: 1px solid #e2e8f0;">
+										<p style="margin: 0 0 8px 0;">Replace complex nested <code>if()</code> statements with clean, bracketed table lookups and incremental weight steppers:</p>
+										
+										<h5 style="margin: 10px 0 4px 0; font-size: 13px; color: #0f172a; font-weight: 700;">1. <code>[table on="<variable>" tiers="<threshold:cost>, ..."]</code> (Stepped Bracket Lookup)</h5>
+										<ul style="margin: 0 0 10px 0; padding-left: 20px;">
+											<li><code>[table on="[weight]" tiers="1:4.50, 5:8.00, 10:12.50, 20:18.00, default:25.00"]</code> – Up to 1 lb = $4.50, up to 5 lbs = $8.00, up to 10 lbs = $12.50, up to 20 lbs = $18.00, over 20 lbs = $25.00.</li>
+											<li><code>[table on="[qty]" tiers="1:5.00, 3:7.50, 6:10.00, default:15.00"]</code> – Tiered pricing based on total item quantity.</li>
+											<li><code>[table on="[subtotal]" tiers="50:9.99, 100:4.99, default:0.00"]</code> – Subtotal-based tiers (e.g. Free shipping over $100).</li>
+										</ul>
+
+										<h5 style="margin: 12px 0 4px 0; font-size: 13px; color: #0f172a; font-weight: 700;">2. <code>[scale on="<variable>" base_cost=X base_units=Y rate=Z step=W]</code> (Progressive Stepper)</h5>
+										<ul style="margin: 0 0 10px 0; padding-left: 20px;">
+											<li><code>[scale on="[weight]" base_cost=5.00 base_units=2 rate=1.50 step=1]</code> – $5.00 base for the first 2 lbs, then +$1.50 for each additional 1 lb.</li>
+											<li><code>[scale on="[weight]" base_cost=25.00 base_units=50 rate=5.00 step=10]</code> – Freight: $25.00 base up to 50 lbs, then +$5.00 for every 10 lbs beyond 50 lbs.</li>
+											<li><code>[scale on="[qty]" base_cost=4.00 base_units=1 rate=2.00 step=3]</code> – $4.00 base for 1 item, then +$2.00 for every 3 extra items.</li>
+										</ul>
+										<p style="margin: 0; background: #e0f2fe; border: 1px solid #7dd3fc; border-radius: 6px; padding: 8px 12px; font-size: 12px; color: #0369a1;"><strong>Formula Integration:</strong> <code>[table]</code> and <code>[scale]</code> can be combined with other formula math, fees, and conditions (e.g. <code>[table on="[weight]" tiers="..."] + [rate percent=5] + [fee label="Fuel" percent=2]</code>).</p>
+									</div>
+								</details>
+
+								<!-- Accordion 8: Location & Country Rules Syntax -->
+								<details class="formula-help-accordion" style="margin-bottom: 12px; background: #ffffff; border: 1px solid #cbd5e1; border-radius: 8px; overflow: hidden;">
 									<summary style="padding: 12px 16px; font-weight: 700; font-size: 14px; color: #0f172a; background: #f8fafc; cursor: pointer; user-select: none;">🌍 Location & Country Rules Syntax</summary>
 									<div style="padding: 16px; border-top: 1px solid #e2e8f0;">
 										<ul style="margin: 0; padding-left: 20px;">

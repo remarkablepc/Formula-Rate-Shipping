@@ -1,4 +1,4 @@
-# Formula Rate Shipping for WooCommerce (v0.68.1)
+# Formula Rate Shipping for WooCommerce (v0.69.0)
 
 **Formula Rate Shipping** is a powerful, flexible WooCommerce shipping method plugin that lets you construct custom dynamic shipping and handling formulas, set priority rules by product category, tag, attribute, or variation, apply location and regional overrides, and test everything in real-time with an interactive simulator.
 
@@ -20,7 +20,7 @@ Most WooCommerce shipping plugins fall into two camps: **table-rate** (rigid loo
 
 ## Maturity Status
 
-**Version 0.68.1 -- Production-Ready Release**
+**Version 0.69.0 -- Production-Ready Release**
 
 This plugin has been through 35+ iterations of active development. The core formula engine and rule resolution logic are stable and battle-tested. It is suitable for production use by technically-minded store owners.
 
@@ -136,6 +136,17 @@ Formulas support standard mathematical expressions and variables evaluated per m
 - **`[discount label="..." amount=5.00]` (Cart Credit Line Item)** -- Creates a standalone negative credit line item in cart totals (e.g. `VIP Credit: -$5.00`) with purple discount tag.
 - **`[sale label="..." percent=10]` (Cart Promo Credit Line Item)** -- Creates a standalone promo credit line item (e.g. `Flash Sale Promo: -$4.20`) with red sale tag.
 - **`icon="none"` Mode** -- Renders clean, text-only cart line items without SVG icons.
+
+#### Tiered Step Tables ([table]) & Progressive Scales ([scale])
+
+- **`[table on="<variable>" tiers="threshold:cost, ..."]`** -- Stepped bracket table lookup. Replaces deeply nested `if()` chains with a concise threshold-to-cost matrix:
+  - `[table on="[weight]" tiers="1:4.50, 5:8.00, 10:12.50, 20:18.00, default:25.00"]` -- Flat bracket lookup by weight.
+  - `[table on="[qty]" tiers="1:5.00, 3:7.50, 6:10.00, default:15.00"]` -- Tiered pricing by item count.
+  - `[table on="[subtotal]" tiers="50:9.99, 100:4.99, default:0.00"]` -- Subtotal-based tiers (e.g. Free shipping over $100).
+- **`[scale on="<variable>" base_cost=X base_units=Y rate=Z step=W]`** -- Progressive incremental stepper:
+  - `[scale on="[weight]" base_cost=5.00 base_units=2 rate=1.50 step=1]` -- $5.00 base for first 2 lbs, then +$1.50 for each additional 1 lb.
+  - `[scale on="[weight]" base_cost=25.00 base_units=50 rate=5.00 step=10]` -- Heavy freight: $25.00 base for first 50 lbs, then +$5.00 for every 10 lbs beyond 50 lbs.
+  - `[scale on="[qty]" base_cost=4.00 base_units=1 rate=2.00 step=3]` -- $4.00 for 1st item, then +$2.00 for every 3 additional items.
 
 ### User Role & Identity Variables
 
@@ -385,10 +396,10 @@ if([product="Hardcover"], 5.00, 3.00)
 
 ## Installation & Setup
 
-1. Download `formula-rate-shipping-v0.68.1.zip`.
+1. Download `formula-rate-shipping-v0.69.0.zip`.
 2. Log into your WordPress Admin Dashboard.
 3. Navigate to **Plugins** -> **Add New** -> **Upload Plugin**.
-4. Upload `formula-rate-shipping-v0.68.1.zip` and click **Activate**.
+4. Upload `formula-rate-shipping-v0.69.0.zip` and click **Activate**.
 5. Go to **WooCommerce** -> **Settings** -> **Shipping** -> **Formula Rate Shipping** to configure your formulas and rules.
 
 > **Tip on WooCommerce Shipping Cache:** WooCommerce caches shipping rates in customer sessions. When updating settings or testing live rates, change the customer ZIP code on the checkout page or clear transients under **WooCommerce -> Status -> Tools -> Clear transients**.
