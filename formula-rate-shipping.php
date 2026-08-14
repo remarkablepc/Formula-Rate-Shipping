@@ -8,7 +8,7 @@
 
  * Description: Calculate dynamic shipping and handling rates using custom formulas, priority item rules (Categories, Tags & Attributes), location overrides, and an interactive real-time tester.
 
- * Version: 0.63.0
+ * Version: 0.64.0
 
  * Author:      RemarkablePC
 
@@ -11210,19 +11210,19 @@ function buildLocFormulaRow(idx, ship, hand, isEnabled, bgClass) {
 
 
 
-								<h4 style="margin: 0 0 10px 0; font-size: 15px; color: #1e293b; font-weight: 700; border-bottom: 1px solid #e2e8f0; padding-bottom: 8px;">💬 Dynamic Rate Notice Examples ([message="..."] / [notice="..."])</h4>
+								<h4 style="margin: 0 0 10px 0; font-size: 15px; color: #1e293b; font-weight: 700; border-bottom: 1px solid #e2e8f0; padding-bottom: 8px;">💬 Dynamic Rate Notice & Alert Examples ([message="..."] / [notice="..."] / [warning="..."])</h4>
 
-								<p style="margin: 0 0 8px 0;">Attach custom subtext notices directly to shipping rate titles at checkout based on device, OS, browser, holiday, or sale conditions:</p>
+								<p style="margin: 0 0 8px 0;">Attach custom styled notice badges directly to shipping rate titles at checkout based on device, OS, browser, location, holiday, or sale conditions:</p>
 
 								<ul style="margin: 0 0 18px 0; padding-left: 20px;">
 
-									<li><code>if([os] == "Linux", 0.00 + [message="Thanks for supporting open source! 5% Off"], 5.00)</code> – Displays <strong>Shipping (Thanks for supporting open source! 5% Off)</strong> at checkout.</li>
+									<li><code>if([os] == "Linux", 0.00 + [message="Thanks for supporting open source!"], 5.00)</code> – Displays a blue 💬 Chat badge: <strong>Thanks for supporting open source!</strong></li>
 
-									<li><code>if([is_mobile], 2.99 + [notice="Mobile App Special Rate"], 5.99)</code> – Displays <strong>Shipping (Mobile App Special Rate)</strong> for mobile users.</li>
+									<li><code>if([is_mobile], 2.99 + [notice="Mobile App Special Rate"], 5.99)</code> – Displays a green ℹ️ Info badge: <strong>Mobile App Special Rate</strong>.</li>
 
-									<li><code>if([is_holiday="Christmas"], 0.00 + [message="Christmas Free Shipping Perk"], 7.50)</code> – Displays <strong>Shipping (Christmas Free Shipping Perk)</strong> on Christmas Day.</li>
+									<li><code>if([is_international], 15.00 + [warning="Hazardous Materials Ground Shipping Only"], 5.00)</code> – Displays an amber ⚠️ Warning badge: <strong>Hazardous Materials Ground Shipping Only</strong>.</li>
 
-									<li><code>if([on_sale], 8.50 + [notice="Clearance Item Shipping Rate"], 4.50)</code> – Displays <strong>Shipping (Clearance Item Shipping Rate)</strong> when sale items are in the cart.</li>
+									<li><code>if([is_holiday="Christmas"], 0.00 + [message="Christmas Free Shipping Perk"], 7.50)</code> – Displays a blue 💬 Chat badge on Christmas Day.</li>
 
 								</ul>
 
@@ -12766,9 +12766,9 @@ if ( ! function_exists( 'formula_rate_shipping_render_rate_notice' ) ) {
 
 		if ( ! is_array( $entries ) ) {
 
-			// Legacy plain-text notice (backward compatibility)
+			// Legacy plain-text notice
 
-			echo '<p class="formula-shipping-rate-notice" style="margin:4px 0 0 24px;font-size:12px;line-height:1.4;color:#475569;">' . esc_html( $notice ) . '</p>';
+			echo '<div class="formula-rate-notice-badge formula-notice-message" style="display:inline-flex;align-items:center;gap:6px;margin:6px 0 2px 24px;padding:4px 10px;border-radius:6px;font-size:12px;font-weight:500;line-height:1.4;background:#f0f9ff;border:1px solid #bae6fd;color:#0369a1;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#0284c7" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg><span>' . esc_html( $notice ) . '</span></div>';
 
 			return;
 
@@ -12786,23 +12786,41 @@ if ( ! function_exists( 'formula_rate_shipping_render_rate_notice' ) ) {
 
 			$message = esc_html( $entry['message'] );
 
-			$icon    = '';
 
-			if ( 'message' === $type ) {
 
-				$icon = '<span style="display:inline-flex;align-items:center;margin-right:4px;color:#6366f1;"><span class="dashicons dashicons-format-chat" style="font-size:14px;width:14px;height:14px;"></span></span>';
+			$bg_color     = '#f0f9ff';
 
-			} elseif ( 'notice' === $type ) {
+			$border_color = '#bae6fd';
 
-				$icon = '<span style="display:inline-flex;align-items:center;margin-right:4px;color:#0284c7;"><span class="dashicons dashicons-info" style="font-size:14px;width:14px;height:14px;"></span></span>';
+			$text_color   = '#0369a1';
+
+			$svg_icon     = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#0284c7" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>';
+
+
+
+			if ( 'notice' === $type ) {
+
+				$bg_color     = '#f0fdf4';
+
+				$border_color = '#a7f3d0';
+
+				$text_color   = '#15803d';
+
+				$svg_icon     = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#059669" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>';
 
 			} elseif ( 'warning' === $type ) {
 
-				$icon = '<span style="display:inline-flex;align-items:center;margin-right:4px;color:#d97706;"><span class="dashicons dashicons-warning" style="font-size:14px;width:14px;height:14px;"></span></span>';
+				$bg_color     = '#fffbeb';
+
+				$border_color = '#fde68a';
+
+				$text_color   = '#b45309';
+
+				$svg_icon     = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#d97706" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>';
 
 			}
 
-			echo '<p class="formula-shipping-rate-notice" style="margin:4px 0 0 24px;font-size:12px;line-height:1.4;color:#475569;display:flex;align-items:flex-start;gap:2px;">' . $icon . '<span>' . $message . '</span></p>';
+			echo '<div class="formula-rate-notice-badge formula-notice-' . esc_attr( $type ) . '" style="display:inline-flex;align-items:center;gap:6px;margin:6px 0 2px 24px;padding:4px 10px;border-radius:6px;font-size:12px;font-weight:500;line-height:1.4;background:' . $bg_color . ';border:1px solid ' . $border_color . ';color:' . $text_color . ';">' . $svg_icon . '<span>' . $message . '</span></div>';
 
 		}
 
