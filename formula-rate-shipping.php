@@ -8,7 +8,7 @@
 
  * Description: Calculate dynamic shipping and handling rates using custom formulas, priority item rules (Categories, Tags & Attributes), location overrides, and an interactive real-time tester.
 
- * Version: 0.67.4
+ * Version: 0.68.0
 
  * Author:      RemarkablePC
 
@@ -7634,7 +7634,7 @@ function buildLocFormulaRow(idx, ship, hand, isEnabled, bgClass) {
 
 									<h4 style="margin: 0 0 12px 0; font-size: 14px; font-weight: 700; color: #0f172a;">1. <?php esc_html_e( 'Destination Address', 'formula-rate-shipping' ); ?></h4>
 
-										<div class="formula-preview-form-group" style="display: grid; grid-template-columns: 140px 150px 140px 1fr; gap: 12px; align-items: end;">
+										<div class="formula-preview-form-group" style="display: grid; grid-template-columns: 140px 150px 1fr 140px; gap: 12px; align-items: end;">
 
 											<div>
 
@@ -7654,74 +7654,79 @@ function buildLocFormulaRow(idx, ship, hand, isEnabled, bgClass) {
 
 											<div>
 
-												<label><?php esc_html_e( 'ZIP / Postcode', 'formula-rate-shipping' ); ?></label>
-
-												<input type="text" id="formula_sim_zip" value="90210" placeholder="90210" />
-
-											</div>
-
-											<div>
-
 												<label><?php esc_html_e( 'City', 'formula-rate-shipping' ); ?></label>
 
 												<input type="text" id="formula_sim_city" value="Los Angeles" placeholder="Los Angeles" />
 
 											</div>
 
+											<div>
+
+												<label><?php esc_html_e( 'ZIP / Postcode', 'formula-rate-shipping' ); ?></label>
+
+												<input type="text" id="formula_sim_zip" value="90210" placeholder="90210" />
+
+											</div>
+
 										</div>
 
-										<div style="margin-top: 14px; background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 8px; padding: 14px 16px;">
-
-											<p style="margin: 0 0 10px 0; font-size: 12px; font-weight: 600; color: #334155;"><?php esc_html_e( 'Customer Context for User Rules', 'formula-rate-shipping' ); ?></p>
-
-											<div class="formula-preview-form-group-row">
-
-												<div class="formula-preview-form-group">
-
-													<label><?php esc_html_e( 'User Role', 'formula-rate-shipping' ); ?></label>
-
-													<input type="text" id="formula_sim_user_role" placeholder="subscriber" />
-
+										<!-- Context Rules Rollups (Customer Context & Environment Context) -->
+										<div style="margin-top: 14px; border: 1px solid #cbd5e1; border-radius: 8px; overflow: hidden; background: #ffffff;">
+											<!-- Rollup 1: Customer Context -->
+											<details style="border-bottom: 1px solid #e2e8f0;">
+												<summary style="padding: 10px 14px; font-size: 12px; font-weight: 600; color: #334155; background: #f8fafc; cursor: pointer; user-select: none;">
+													👤 <?php esc_html_e( 'Customer Context (User Roles, Emails & Custom Meta)', 'formula-rate-shipping' ); ?>
+												</summary>
+												<div style="padding: 14px; background: #ffffff;">
+													<div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-bottom: 10px;">
+														<div>
+															<label style="font-size: 11px; font-weight: 600; color: #475569; display: block; margin-bottom: 4px;"><?php esc_html_e( 'User Role', 'formula-rate-shipping' ); ?></label>
+															<input type="text" id="formula_sim_user_role" placeholder="e.g. subscriber, customer" style="width: 100%; font-size: 12px;" />
+														</div>
+														<div>
+															<label style="font-size: 11px; font-weight: 600; color: #475569; display: block; margin-bottom: 4px;"><?php esc_html_e( 'User Login', 'formula-rate-shipping' ); ?></label>
+															<input type="text" id="formula_sim_user_login" placeholder="e.g. johndoe" style="width: 100%; font-size: 12px;" />
+														</div>
+														<div>
+															<label style="font-size: 11px; font-weight: 600; color: #475569; display: block; margin-bottom: 4px;"><?php esc_html_e( 'User Email', 'formula-rate-shipping' ); ?></label>
+															<input type="text" id="formula_sim_user_email" placeholder="e.g. customer@example.com" style="width: 100%; font-size: 12px;" />
+														</div>
+													</div>
+													<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+														<div>
+															<label style="font-size: 11px; font-weight: 600; color: #475569; display: block; margin-bottom: 4px;"><?php esc_html_e( 'User Meta Key', 'formula-rate-shipping' ); ?></label>
+															<input type="text" id="formula_sim_user_meta_key" placeholder="e.g. membership_level" style="width: 100%; font-size: 12px;" />
+														</div>
+														<div>
+															<label style="font-size: 11px; font-weight: 600; color: #475569; display: block; margin-bottom: 4px;"><?php esc_html_e( 'User Meta Value', 'formula-rate-shipping' ); ?></label>
+															<input type="text" id="formula_sim_user_meta_value" placeholder="e.g. gold, vip" style="width: 100%; font-size: 12px;" />
+														</div>
+													</div>
 												</div>
+											</details>
 
-												<div class="formula-preview-form-group">
-
-													<label><?php esc_html_e( 'User Login', 'formula-rate-shipping' ); ?></label>
-
-													<input type="text" id="formula_sim_user_login" placeholder="johndoe" />
-
+											<!-- Rollup 2: Environment & Device Context -->
+											<details>
+												<summary style="padding: 10px 14px; font-size: 12px; font-weight: 600; color: #334155; background: #f8fafc; cursor: pointer; user-select: none;">
+													💻 <?php esc_html_e( 'Environment & Device Context (Device, OS & Browser Target)', 'formula-rate-shipping' ); ?>
+												</summary>
+												<div style="padding: 14px; background: #ffffff;">
+													<div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px;">
+														<div>
+															<label style="font-size: 11px; font-weight: 600; color: #475569; display: block; margin-bottom: 4px;"><?php esc_html_e( 'Device Target', 'formula-rate-shipping' ); ?></label>
+															<input type="text" id="formula_sim_device" placeholder="e.g. mobile, desktop, tablet" style="width: 100%; font-size: 12px;" />
+														</div>
+														<div>
+															<label style="font-size: 11px; font-weight: 600; color: #475569; display: block; margin-bottom: 4px;"><?php esc_html_e( 'Operating System (OS)', 'formula-rate-shipping' ); ?></label>
+															<input type="text" id="formula_sim_os" placeholder="e.g. iOS, Android, Windows, macOS" style="width: 100%; font-size: 12px;" />
+														</div>
+														<div>
+															<label style="font-size: 11px; font-weight: 600; color: #475569; display: block; margin-bottom: 4px;"><?php esc_html_e( 'Browser Target', 'formula-rate-shipping' ); ?></label>
+															<input type="text" id="formula_sim_browser" placeholder="e.g. Chrome, Firefox, Safari, Edge, Floorp" style="width: 100%; font-size: 12px;" />
+														</div>
+													</div>
 												</div>
-
-											</div>
-
-											<div class="formula-preview-form-group-row">
-
-												<div class="formula-preview-form-group">
-
-													<label><?php esc_html_e( 'User Email', 'formula-rate-shipping' ); ?></label>
-
-													<input type="text" id="formula_sim_user_email" placeholder="customer@example.com" />
-
-												</div>
-
-												<div class="formula-preview-form-group">
-
-													<label><?php esc_html_e( 'User Meta Key', 'formula-rate-shipping' ); ?></label>
-
-													<input type="text" id="formula_sim_user_meta_key" placeholder="membership_level" />
-
-												</div>
-
-											</div>
-
-											<div class="formula-preview-form-group">
-
-												<label><?php esc_html_e( 'User Meta Value', 'formula-rate-shipping' ); ?></label>
-
-												<input type="text" id="formula_sim_user_meta_value" placeholder="gold" />
-
-											</div>
-
+											</details>
 										</div>
 
 									</div>
@@ -9765,17 +9770,14 @@ function buildLocFormulaRow(idx, ship, hand, isEnabled, bgClass) {
 								var zip = $('#formula_sim_zip').val();
 
 								var userContext = {
-
 									role: ($('#formula_sim_user_role').val() || '').trim(),
-
 									login: ($('#formula_sim_user_login').val() || '').trim(),
-
 									email: ($('#formula_sim_user_email').val() || '').trim(),
-
 									metaKey: ($('#formula_sim_user_meta_key').val() || '').trim(),
-
-									metaValue: ($('#formula_sim_user_meta_value').val() || '').trim()
-
+									metaValue: ($('#formula_sim_user_meta_value').val() || '').trim(),
+									device: ($('#formula_sim_device').val() || '').trim(),
+									os: ($('#formula_sim_os').val() || '').trim(),
+									browser: ($('#formula_sim_browser').val() || '').trim()
 								};
 
 
@@ -11311,15 +11313,19 @@ function buildLocFormulaRow(idx, ship, hand, isEnabled, bgClass) {
 
 
 								<details class="formula-help-accordion" style="margin-bottom: 12px; background: #ffffff; border: 1px solid #cbd5e1; border-radius: 8px; overflow: hidden;" open>
-									<summary style="padding: 12px 16px; font-weight: 700; font-size: 14px; color: #0f172a; background: #f8fafc; cursor: pointer; user-select: none;">💬 Dynamic Rate Notices, Alerts & Positioning ([message="..."] / [notice="..."] / [warning="..."])</summary>
+									<summary style="padding: 12px 16px; font-weight: 700; font-size: 14px; color: #0f172a; background: #f8fafc; cursor: pointer; user-select: none;">💬 Dynamic Rate Notices, Order Total Line Items & Positioning</summary>
 									<div style="padding: 16px; border-top: 1px solid #e2e8f0;">
-										<p style="margin: 0 0 8px 0;">Attach custom styled notice badges to shipping rate titles or place them anywhere in WooCommerce using <code>position="..."</code>:</p>
+										<p style="margin: 0 0 8px 0;">Attach custom notice badges or create dynamic standalone cart line items in WooCommerce:</p>
 										<ul style="margin: 0 0 12px 0; padding-left: 20px;">
-											<li><code>if([os] == "Linux", 0.00 + [message="Thanks for supporting open source!"], 5.00)</code> – Displays a blue 💬 Chat badge under the rate.</li>
-											<li><code>if([is_mobile], 2.99 + [notice="Mobile App Special Rate"], 5.99)</code> – Displays a green ℹ️ Info badge under the rate.</li>
+											<li><code>if([os] == "Linux", 0.00 + [message="Thanks for supporting open source!"], 5.00)</code> – Displays a sky blue 💬 Chat badge under the rate.</li>
+											<li><code>if([is_mobile], 2.99 + [notice="Mobile App Special Rate"], 5.99)</code> – Displays a sky blue 💬 Chat badge under the rate.</li>
 											<li><code>if([is_international], 15.00 + [warning="Customs Delays Possible" position="top"], 5.00)</code> – Displays an amber ⚠️ Warning banner at the <strong>top of the checkout page</strong>.</li>
-											<li><code>[message="Free Shipping Unlocked!" position="cart_table"]</code> – Displays below the product list on the left side of the cart page.</li>
-											<li><code>[notice="All shipments insured" position="before_shipping"]</code> – Displays directly above the shipping options box.</li>
+											<li><code>[fee percent=5 label="Fuel Surcharge"]</code> – Adds a standalone 5% surcharge line item (Fuel Surcharge: +$3.50) with emerald green currency icon.</li>
+											<li><code>[fee formula="[qty] * 2.50" label="Hazmat Packaging Fee" icon="warning"]</code> – Adds a standalone packaging surcharge line item with an amber warning icon.</li>
+											<li><code>[discount amount=5.00 label="Subscriber Credit"]</code> – Adds a standalone credit line item (Subscriber Credit: -$5.00) with a purple discount tag.</li>
+											<li><code>[sale percent=10 label="Flash Sale Promo"]</code> – Adds a standalone promo credit line item (Flash Sale Promo: -$4.20) with a red sale tag.</li>
+											<li><code>[fee amount=10.00 label="Remote Handling" icon="none"]</code> – <code>icon="none"</code> mode renders clean text-only line items without SVG icons.</li>
+											<li><code>[rate percent=10]</code> – Internal rate math placeholder: calculates 10% of subtotal and bundles it inside the shipping rate price itself without creating a separate line item.</li>
 										</ul>
 										<h5 style="margin: 12px 0 6px 0; font-size: 13px; color: #334155; font-weight: 700;">📍 Notice Position Options (<code>position="..."</code>)</h5>
 										<table style="width: 100%; border-collapse: collapse; font-size: 12px; border: 1px solid #e2e8f0;">
