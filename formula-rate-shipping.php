@@ -8,7 +8,7 @@
 
  * Description: Calculate dynamic shipping and handling rates using custom formulas, priority item rules (Categories, Tags & Attributes), location overrides, and an interactive real-time tester.
 
- * Version: 0.62.5
+ * Version: 0.62.6
 
  * Author:      RemarkablePC
 
@@ -5368,9 +5368,9 @@ function formula_rate_shipping_init() {
 																	</div>
 																</div>
 																<div class="formula-loc-col formula-loc-col-state" style="display: <?php echo $is_single_country ? 'block' : 'none'; ?>;">
-																	<label class="formula-loc-col-label"><?php esc_html_e( 'State', 'formula-rate-shipping' ); ?></label>
+																	<label class="formula-loc-col-label"><?php esc_html_e( 'State or Province', 'formula-rate-shipping' ); ?></label>
 																	<div class="formula-loc-state-wrap is-active">
-																		<input type="text" name="<?php echo esc_attr( $field_key ); ?>[<?php echo $index; ?>][state]" class="formula-loc-state-input" value="<?php echo esc_attr( $state ); ?>" title="<?php esc_attr_e( 'State', 'formula-rate-shipping' ); ?>" placeholder="e.g. CA, NY, TX or ALL" <?php echo $is_single_country ? '' : 'disabled'; ?> />
+																		<input type="text" name="<?php echo esc_attr( $field_key ); ?>[<?php echo $index; ?>][state]" class="formula-loc-state-input" value="<?php echo esc_attr( $state ); ?>" title="<?php esc_attr_e( 'State or Province', 'formula-rate-shipping' ); ?>" placeholder="e.g. CA, ON, NY or ALL" <?php echo $is_single_country ? '' : 'disabled'; ?> />
 																	</div>
 																</div>
 																<div class="formula-loc-col formula-loc-col-city">
@@ -5887,8 +5887,8 @@ function formula_rate_shipping_init() {
 							'<div class="formula-loc-country-wrap is-active"><input type="text" name="' + fieldKey + '[' + idx + '][country]" class="formula-loc-country-input" value="' + $('<div>').text(country).html() + '" title="<?php echo esc_js( __( 'Country', 'formula-rate-shipping' ) ); ?>" placeholder="US, CA, MX or ALL" /></div>' +
 						'</div>' +
 						'<div class="formula-loc-col formula-loc-col-state" style="display:' + (isSingleCountry ? 'block' : 'none') + ';">' +
-							'<label class="formula-loc-col-label"><?php echo esc_js( __( 'State', 'formula-rate-shipping' ) ); ?></label>' +
-							'<div class="formula-loc-state-wrap is-active"><input type="text" name="' + fieldKey + '[' + idx + '][state]" class="formula-loc-state-input" value="' + $('<div>').text(state).html() + '" title="<?php echo esc_js( __( 'State', 'formula-rate-shipping' ) ); ?>" placeholder="e.g. CA, NY, TX or ALL"' + (isSingleCountry ? '' : ' disabled') + ' /></div>' +
+							'<label class="formula-loc-col-label"><?php echo esc_js( __( 'State or Province', 'formula-rate-shipping' ) ); ?></label>' +
+							'<div class="formula-loc-state-wrap is-active"><input type="text" name="' + fieldKey + '[' + idx + '][state]" class="formula-loc-state-input" value="' + $('<div>').text(state).html() + '" title="<?php echo esc_js( __( 'State or Province', 'formula-rate-shipping' ) ); ?>" placeholder="e.g. CA, ON, NY or ALL"' + (isSingleCountry ? '' : ' disabled') + ' /></div>' +
 						'</div>' +
 						'<div class="formula-loc-col formula-loc-col-city">' +
 							'<label class="formula-loc-col-label"><?php echo esc_js( __( 'City / ZIP / Pattern', 'formula-rate-shipping' ) ); ?></label>' +
@@ -7538,7 +7538,7 @@ function buildLocFormulaRow(idx, ship, hand, isEnabled, bgClass) {
 
 									<h4>1. <?php esc_html_e( 'Destination Address', 'formula-rate-shipping' ); ?></h4>
 
-										<div class="formula-preview-form-group" style="display: grid; grid-template-columns: 1fr 0.5fr 0.4fr; gap: 12px; align-items: end;">
+										<div class="formula-preview-form-group" style="display: grid; grid-template-columns: 140px 150px 140px 1fr; gap: 12px; align-items: end;">
 
 											<div>
 
@@ -7550,9 +7550,9 @@ function buildLocFormulaRow(idx, ship, hand, isEnabled, bgClass) {
 
 											<div id="formula_sim_state_group">
 
-												<label><?php esc_html_e( 'State', 'formula-rate-shipping' ); ?></label>
+												<label><?php esc_html_e( 'State or Province', 'formula-rate-shipping' ); ?></label>
 
-												<input type="text" id="formula_sim_state" class="formula-sim-state-input formula-multi-suggest-input" value="CA" placeholder="CA, NY" title="<?php esc_attr_e( 'State', 'formula-rate-shipping' ); ?>" />
+												<input type="text" id="formula_sim_state" class="formula-sim-state-input formula-multi-suggest-input" value="CA" placeholder="CA, ON, NY" title="<?php esc_attr_e( 'State or Province', 'formula-rate-shipping' ); ?>" />
 
 											</div>
 
@@ -7560,19 +7560,15 @@ function buildLocFormulaRow(idx, ship, hand, isEnabled, bgClass) {
 
 												<label><?php esc_html_e( 'ZIP / Postcode', 'formula-rate-shipping' ); ?></label>
 
-												<input type="text" id="formula_sim_zip" value="90210" />
+												<input type="text" id="formula_sim_zip" value="90210" placeholder="90210" />
 
 											</div>
-
-										</div>
-
-										<div class="formula-preview-form-group" style="display: grid; grid-template-columns: 1fr; gap: 12px; margin-top: 12px;">
 
 											<div>
 
 												<label><?php esc_html_e( 'City', 'formula-rate-shipping' ); ?></label>
 
-												<input type="text" id="formula_sim_city" value="Los Angeles" />
+												<input type="text" id="formula_sim_city" value="Los Angeles" placeholder="Los Angeles" />
 
 											</div>
 
@@ -13621,7 +13617,7 @@ if ( ! function_exists( 'formula_rate_shipping_inject_admin_css' ) ) {
 		}
 
 		tr.formula-location-row-main select.formula-loc-type-select {
-			margin-top: 20px !important;
+			margin-top: 24px !important;
 			vertical-align: top !important;
 			width: 100% !important;
 		}
