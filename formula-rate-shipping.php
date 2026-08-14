@@ -8,7 +8,7 @@
 
  * Description: Calculate dynamic shipping and handling rates using custom formulas, priority item rules (Categories, Tags & Attributes), location overrides, and an interactive real-time tester.
 
- * Version: 0.62.7
+ * Version: 0.62.8
 
  * Author:      RemarkablePC
 
@@ -5359,7 +5359,10 @@ function formula_rate_shipping_init() {
 												<td class="formula-location-target-cell">
 													<div class="loc-geo-fields" style="display: <?php echo esc_attr( $geo_display ); ?>;">
 														<div class="formula-mini-target-shell formula-mini-target-shell-location">
-															<?php $is_single_country = ( preg_match( '/^[A-Z]{2}$/i', trim( $country ) ) && strtoupper( trim( $country ) ) !== 'ALL' ); ?>
+															<?php
+															$country_clean = trim( strtoupper( $country ) );
+															$is_single_country = ( '' !== $country_clean && 'ALL' !== $country_clean && false === strpos( $country_clean, ',' ) && false === strpos( $country_clean, ';' ) );
+															?>
 															<div class="formula-location-inline-fields formula-mini-target-grid formula-mini-target-grid-location" data-has-state="<?php echo $is_single_country ? 'true' : 'false'; ?>">
 																<div class="formula-loc-col formula-loc-col-country">
 																	<label class="formula-loc-col-label"><?php esc_html_e( 'Country', 'formula-rate-shipping' ); ?></label>
@@ -5856,7 +5859,8 @@ function formula_rate_shipping_init() {
 	isEnabled = (isEnabled !== false);
 	country = country || '';
 	state = state || '';
-	var isSingleCountry = (country && typeof country === 'string' && /^[A-Z]{2}$/i.test(country.trim()) && country.trim().toUpperCase() !== 'ALL');
+	var countryClean = (country || '').trim().toUpperCase();
+	var isSingleCountry = (countryClean !== '' && countryClean !== 'ALL' && countryClean.indexOf(',') === -1 && countryClean.indexOf(';') === -1);
 
 	var geoDisplay  = (ruleType === 'location') ? 'block' : 'none';
 	var userDisplay = (ruleType !== 'location' && ruleType !== 'user_meta') ? 'block' : 'none';
@@ -13679,7 +13683,7 @@ if ( ! function_exists( 'formula_rate_shipping_inject_admin_css' ) ) {
 		}
 
 		.formula-mini-target-grid-location {
-			grid-template-columns: 1fr 1fr !important;
+			grid-template-columns: 140px 1fr !important;
 			width: 100% !important;
 			max-width: 100% !important;
 		}
@@ -14814,10 +14818,10 @@ if ( ! function_exists( 'formula_rate_shipping_inject_admin_css' ) ) {
 				var countryVal = (countryInput.val() || '').trim().toUpperCase();
 				var stateInput = mainRow.find('.formula-loc-state-input');
 				var grid       = mainRow.find('.formula-mini-target-grid-location');
-				var isSingleCountry = /^[A-Z]{2}$/.test(countryVal) && countryVal !== 'ALL';
+				var isSingleCountry = (countryVal !== '' && countryVal !== 'ALL' && countryVal.indexOf(',') === -1 && countryVal.indexOf(';') === -1);
 
 				if (isSingleCountry) {
-					stateInput.prop('disabled', false).attr('placeholder', 'e.g. CA, NY, TX or ALL');
+					stateInput.prop('disabled', false).attr('placeholder', 'e.g. CA, ON, NY or ALL');
 					grid.attr('data-has-state', 'true');
 				} else {
 					stateInput.prop('disabled', true).attr('placeholder', 'To Set State or Province Only One Country Must Be Selected');
