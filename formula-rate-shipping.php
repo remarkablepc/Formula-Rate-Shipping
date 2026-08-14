@@ -8,7 +8,7 @@
 
  * Description: Calculate dynamic shipping and handling rates using custom formulas, priority item rules (Categories, Tags & Attributes), location overrides, and an interactive real-time tester.
 
- * Version: 0.65.0
+ * Version: 0.65.1
 
  * Author:      RemarkablePC
 
@@ -5753,40 +5753,30 @@ function formula_rate_shipping_init() {
 
 
 
+							function checkIsSingleCountryVal(val) {
+								if (!val || typeof val !== 'string') return false;
+								var raw = val.trim();
+								var clean = raw.replace(/^['"]|['"]$/g, '').trim().toUpperCase();
+								if (!clean || clean === 'ALL') return false;
+								return (raw.indexOf(',') === -1 && raw.indexOf(';') === -1);
+							}
+
 							function updateLocStateVisibility(mainRow) {
-
+								if (!mainRow || !mainRow.length) return;
 								var countryInput = mainRow.find('.formula-loc-country-input');
-
 								if (!countryInput.length) return;
-
-								var countryVal = (countryInput.val() || '').trim().toUpperCase();
-
+								var countryVal = String(countryInput.val() || '').trim();
 								var stateInput = mainRow.find('.formula-loc-state-input');
-
-								var grid = mainRow.find('.formula-mini-target-grid-location');
-
-								var stateTab = mainRow.find('.formula-mini-target-tab-state');
-
-								var isSingleCountry = /^[A-Z]{2}$/.test(countryVal) && countryVal !== 'ALL';
+								var grid       = mainRow.find('.formula-mini-target-grid-location');
+								var isSingleCountry = checkIsSingleCountryVal(countryVal);
 
 								if (isSingleCountry) {
-
-									stateInput.prop('disabled', false).attr('placeholder', 'e.g. CA, NY, TX or ALL');
-
-									stateTab.removeClass('formula-state-disabled');
-
+									stateInput.prop('disabled', false).attr('placeholder', 'e.g. CA, ON, NY or ALL');
 									grid.attr('data-has-state', 'true');
-
 								} else {
-
 									stateInput.prop('disabled', true).attr('placeholder', 'To Set State or Province Only One Country Must Be Selected');
-
-									stateTab.addClass('formula-state-disabled');
-
 									grid.attr('data-has-state', 'false');
-
 								}
-
 							}
 
 
@@ -11257,41 +11247,55 @@ function buildLocFormulaRow(idx, ship, hand, isEnabled, bgClass) {
 
 
 
-								<h4 style="margin: 0 0 10px 0; font-size: 15px; color: #1e293b; font-weight: 700; border-bottom: 1px solid #e2e8f0; padding-bottom: 8px;">💬 Dynamic Rate Notice & Alert Examples ([message="..."] / [notice="..."] / [warning="..."])</h4>
+								<details class="formula-help-accordion" style="margin-bottom: 12px; background: #ffffff; border: 1px solid #cbd5e1; border-radius: 8px; overflow: hidden;" open>
+									<summary style="padding: 12px 16px; font-weight: 700; font-size: 14px; color: #0f172a; background: #f8fafc; cursor: pointer; user-select: none;">💬 Dynamic Rate Notices & Alert Examples ([message="..."] / [notice="..."] / [warning="..."])</summary>
+									<div style="padding: 16px; border-top: 1px solid #e2e8f0;">
+										<p style="margin: 0 0 8px 0;">Attach custom styled notice badges directly to shipping rate titles at checkout based on device, OS, browser, location, holiday, or sale conditions:</p>
+										<ul style="margin: 0; padding-left: 20px;">
+											<li><code>if([os] == "Linux", 0.00 + [message="Thanks for supporting open source!"], 5.00)</code> – Displays a blue 💬 Chat badge: <strong>Thanks for supporting open source!</strong></li>
+											<li><code>if([is_mobile], 2.99 + [notice="Mobile App Special Rate"], 5.99)</code> – Displays a green ℹ️ Info badge: <strong>Mobile App Special Rate</strong>.</li>
+											<li><code>if([is_international], 15.00 + [warning="Hazardous Materials Ground Shipping Only"], 5.00)</code> – Displays an amber ⚠️ Warning badge: <strong>Hazardous Materials Ground Shipping Only</strong>.</li>
+											<li><code>if([is_holiday="Christmas"], 0.00 + [message="Christmas Free Shipping Perk"], 7.50)</code> – Displays a blue 💬 Chat badge on Christmas Day.</li>
+										</ul>
+									</div>
+								</details>
 
-								<p style="margin: 0 0 8px 0;">Attach custom styled notice badges directly to shipping rate titles at checkout based on device, OS, browser, location, holiday, or sale conditions:</p>
+								<details class="formula-help-accordion" style="margin-bottom: 12px; background: #ffffff; border: 1px solid #cbd5e1; border-radius: 8px; overflow: hidden;">
+									<summary style="padding: 12px 16px; font-weight: 700; font-size: 14px; color: #0f172a; background: #f8fafc; cursor: pointer; user-select: none;">💳 Dynamic Order Total Line Items ([fee], [discount], [sale]) vs [rate]</summary>
+									<div style="padding: 16px; border-top: 1px solid #e2e8f0;">
+										<p style="margin: 0 0 8px 0;">Inject standalone dynamic surcharges and credits directly into the WooCommerce Cart & Checkout Order Totals summary block:</p>
+										<ul style="margin: 0; padding-left: 20px;">
+											<li><code>[fee percent=5 label="Fuel Surcharge"]</code> – Adds a standalone 5% surcharge line item (<strong>Fuel Surcharge: +$3.50</strong>) with emerald green currency icon.</li>
+											<li><code>[fee formula="[qty] * 2.50" label="Hazmat Packaging Fee" icon="warning"]</code> – Adds a standalone packaging surcharge line item with an amber warning icon.</li>
+											<li><code>[discount amount=5.00 label="Subscriber Credit"]</code> – Adds a standalone credit line item (<strong>Subscriber Credit: -$5.00</strong>) with a purple discount tag.</li>
+											<li><code>[sale percent=10 label="Flash Sale Promo"]</code> – Adds a standalone promo credit line item (<strong>Flash Sale Promo: -$4.20</strong>) with a red sale tag.</li>
+											<li><code>[fee amount=10.00 label="Remote Handling" icon="none"]</code> – <code>icon="none"</code> mode renders clean text-only line items without SVG icons.</li>
+											<li><code>[rate percent=10]</code> – Internal math placeholder: calculates 10% of subtotal and bundles it <strong>inside</strong> the shipping rate price itself without creating a separate line item.</li>
+										</ul>
+									</div>
+								</details>
 
-								<ul style="margin: 0 0 18px 0; padding-left: 20px;">
+								<details class="formula-help-accordion" style="margin-bottom: 12px; background: #ffffff; border: 1px solid #cbd5e1; border-radius: 8px; overflow: hidden;">
+									<summary style="padding: 12px 16px; font-weight: 700; font-size: 14px; color: #0f172a; background: #f8fafc; cursor: pointer; user-select: none;">🌍 Location & Country Rules Syntax</summary>
+									<div style="padding: 16px; border-top: 1px solid #e2e8f0;">
+										<ul style="margin: 0; padding-left: 20px;">
+											<li><strong>Country Inputs</strong>: Accepts 2-letter ISO codes (<code>US</code>, <code>CA</code>, <code>GB</code>, <code>FR</code>, <code>DE</code>, <code>MX</code>), 3-letter codes (<code>USA</code>, <code>CAN</code>), or full country names (<code>Canada</code>, <code>France</code>, <code>"United States"</code>, <code>'United Kingdom'</code>).</li>
+											<li><strong>Multi-Word Quotes</strong>: Enclose two-or-more-word country names in single quotes (<code>'United Kingdom'</code>) or double quotes (<code>"United States"</code>).</li>
+											<li><strong>State or Province Reveal</strong>: Entering any single country dynamically activates the <strong>State or Province</strong> box. Selecting multiple countries (e.g. <code>US, CA</code>) or <code>ALL</code> hides State or Province and expands fields full-width.</li>
+										</ul>
+									</div>
+								</details>
 
-									<li><code>if([os] == "Linux", 0.00 + [message="Thanks for supporting open source!"], 5.00)</code> – Displays a blue 💬 Chat badge: <strong>Thanks for supporting open source!</strong></li>
-
-									<li><code>if([is_mobile], 2.99 + [notice="Mobile App Special Rate"], 5.99)</code> – Displays a green ℹ️ Info badge: <strong>Mobile App Special Rate</strong>.</li>
-
-									<li><code>if([is_international], 15.00 + [warning="Hazardous Materials Ground Shipping Only"], 5.00)</code> – Displays an amber ⚠️ Warning badge: <strong>Hazardous Materials Ground Shipping Only</strong>.</li>
-
-									<li><code>if([is_holiday="Christmas"], 0.00 + [message="Christmas Free Shipping Perk"], 7.50)</code> – Displays a blue 💬 Chat badge on Christmas Day.</li>
-
-								</ul>
-
-								<h4 style="margin: 0 0 10px 0; font-size: 15px; color: #1e293b; font-weight: 700; border-bottom: 1px solid #e2e8f0; padding-bottom: 8px;">💳 Dynamic Order Total Line Items ([fee], [discount], [sale]) vs [rate]</h4>
-
-								<p style="margin: 0 0 8px 0;">Inject standalone dynamic surcharges and credits directly into the WooCommerce Cart & Checkout Order Totals summary block:</p>
-
-								<ul style="margin: 0 0 18px 0; padding-left: 20px;">
-
-									<li><code>[fee percent=5 label="Fuel Surcharge"]</code> – Adds a standalone 5% surcharge line item (<strong>Fuel Surcharge: +$3.50</strong>) with emerald green currency icon.</li>
-
-									<li><code>[fee formula="[qty] * 2.50" label="Hazmat Packaging Fee" icon="warning"]</code> – Adds a standalone packaging surcharge line item with an amber warning icon.</li>
-
-									<li><code>[discount amount=5.00 label="Subscriber Credit"]</code> – Adds a standalone credit line item (<strong>Subscriber Credit: -$5.00</strong>) with a purple discount tag.</li>
-
-									<li><code>[sale percent=10 label="Flash Sale Promo"]</code> – Adds a standalone promo credit line item (<strong>Flash Sale Promo: -$4.20</strong>) with a red sale tag.</li>
-
-									<li><code>[fee amount=10.00 label="Remote Handling" icon="none"]</code> – <code>icon="none"</code> mode renders clean text-only line items without SVG icons.</li>
-
-									<li><code>[rate percent=10]</code> – Internal math placeholder: calculates 10% of subtotal and bundles it <strong>inside</strong> the shipping rate price itself without creating a separate line item.</li>
-
-								</ul>
+								<details class="formula-help-accordion" style="margin-bottom: 12px; background: #ffffff; border: 1px solid #cbd5e1; border-radius: 8px; overflow: hidden;">
+									<summary style="padding: 12px 16px; font-weight: 700; font-size: 14px; color: #0f172a; background: #f8fafc; cursor: pointer; user-select: none;">💻 Environment, OS & Browser String Rules</summary>
+									<div style="padding: 16px; border-top: 1px solid #e2e8f0;">
+										<ul style="margin: 0; padding-left: 20px;">
+											<li><strong>Browser Field</strong>: Accepts <strong>ANY browser name, string, or wildcard pattern</strong> (e.g. <code>Chrome</code>, <code>Firefox</code>, <code>Safari</code>, <code>Edge</code>, <code>Brave</code>, <code>Floorp</code>, <code>Vivaldi</code>, <code>Opera</code>, <code>Browser*</code>).</li>
+											<li><strong>OS Field</strong>: Accepts system aliases like <code>Win10</code>, <code>Win11</code>, <code>Ventura</code>, <code>Sonoma</code>, <code>Monterey</code>, <code>iOS 17</code>, <code>Android 14</code>, <code>Linux</code>, <code>ChromeOS</code>.</li>
+											<li><strong>Device Field</strong>: Accepts <code>mobile</code>, <code>desktop</code>, <code>tablet</code>, or <code>ALL</code>.</li>
+										</ul>
+									</div>
+								</details>
 
 
 
@@ -14877,54 +14881,15 @@ if ( ! function_exists( 'formula_rate_shipping_inject_admin_css' ) ) {
 
 			
 			function updateLocStateVisibility(mainRow) {
-				var countryInput = mainRow.find('.formula-loc-country-input');
-				if (!countryInput.length) return;
-				var countryVal = (countryInput.val() || '').trim().toUpperCase();
-				var stateInput = mainRow.find('.formula-loc-state-input');
-				var stateTab = mainRow.find('.formula-mini-target-tab-state');
-				var isSingleCountry = /^[A-Z]{2}$/.test(countryVal) && countryVal !== 'ALL';
-				
-				if (isSingleCountry) {
-					stateInput.prop('disabled', false).removeClass('formula-state-disabled').attr('placeholder', 'e.g. CA, NY, TX or ALL');
-					stateTab.removeClass('formula-state-disabled');
-				} else {
-					stateInput.prop('disabled', true).addClass('formula-state-disabled').attr('placeholder', 'To Set State or Province Only One Country Must Be Selected');
-					stateTab.addClass('formula-state-disabled');
-				}
-			}
-
-			function updateFieldDataIndicators(elem) {
-				var fields = elem ? $(elem) : $('input[type="text"], input[type="number"], select');
-				fields.each(function() {
-					var field = $(this);
-					if (field.is(':disabled') || field.hasClass('formula-state-disabled')) {
-						field.removeClass('formula-field-has-data');
-						return;
-					}
-					var val = String(field.val() || '').trim();
-					var hasData = (val !== '' && val !== 'ALL');
-					field.toggleClass('formula-field-has-data', hasData);
-
-					var shell = field.closest('.formula-mini-target-shell');
-					if (shell.length) {
-						var countryVal = String(shell.find('.formula-loc-country-input').val() || '').trim();
-						var stateVal = String(shell.find('.formula-loc-state-input').val() || '').trim();
-						var cityVal = String(shell.find('.formula-loc-location-input').val() || '').trim();
-
-						shell.find('.formula-mini-target-tab-country').toggleClass('has-data', countryVal !== '' && countryVal !== 'ALL');
-						shell.find('.formula-mini-target-tab-state').toggleClass('has-data', stateVal !== '' && stateVal !== 'ALL');
-						shell.find('.formula-mini-target-tab-city').toggleClass('has-data', cityVal !== '' && cityVal !== 'ALL');
-			function updateLocStateVisibility(mainRow) {
 				if (!mainRow || !mainRow.length) return;
 
 				var countryInput = mainRow.find('.formula-loc-country-input');
 				if (!countryInput.length) return;
 
-				var countryRaw = String(countryInput.val() || '').trim();
-				var countryClean = countryRaw.replace(/^['"]|['"]$/g, '').trim().toUpperCase();
+				var countryVal = String(countryInput.val() || '').trim();
 				var stateInput = mainRow.find('.formula-loc-state-input');
 				var grid       = mainRow.find('.formula-mini-target-grid-location');
-				var isSingleCountry = (countryClean !== '' && countryClean !== 'ALL' && countryRaw.indexOf(',') === -1 && countryRaw.indexOf(';') === -1);
+				var isSingleCountry = checkIsSingleCountryVal(countryVal);
 
 				if (isSingleCountry) {
 					stateInput.prop('disabled', false).attr('placeholder', 'e.g. CA, ON, NY or ALL');
