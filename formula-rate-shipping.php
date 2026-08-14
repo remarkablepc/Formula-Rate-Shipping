@@ -8,7 +8,7 @@
 
  * Description: Calculate dynamic shipping and handling rates using custom formulas, priority item rules (Categories, Tags & Attributes), location overrides, and an interactive real-time tester.
 
- * Version: 0.62.6
+ * Version: 0.62.7
 
  * Author:      RemarkablePC
 
@@ -12875,9 +12875,8 @@ if ( ! function_exists( 'formula_rate_shipping_inject_frontend_css' ) ) {
 	vertical-align: middle !important;
 }
 
-/* SINGLE VISIBLE INPUT CONTAINER - NO 2-COLUMN GRID */
+/* SINGLE VISIBLE INPUT CONTAINER */
 .formula-mini-target-grid-location {
-	display: block !important;
 	width: 100% !important;
 	box-sizing: border-box !important;
 }
@@ -13013,7 +13012,6 @@ select[name*="[type]"] {
 }
 
 .formula-mini-target-grid-location {
-	display: block !important;
 	width: 100% !important;
 	box-sizing: border-box !important;
 }
@@ -13617,7 +13615,7 @@ if ( ! function_exists( 'formula_rate_shipping_inject_admin_css' ) ) {
 		}
 
 		tr.formula-location-row-main select.formula-loc-type-select {
-			margin-top: 24px !important;
+			margin-top: 17px !important;
 			vertical-align: top !important;
 			width: 100% !important;
 		}
