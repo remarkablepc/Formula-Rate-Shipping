@@ -8,7 +8,7 @@
 
  * Description: Calculate dynamic shipping and handling rates using custom formulas, priority item rules (Categories, Tags & Attributes), location overrides, and an interactive real-time tester.
 
- * Version: 0.62.2
+ * Version: 0.62.3
 
  * Author:      RemarkablePC
 
@@ -13624,12 +13624,20 @@ if ( ! function_exists( 'formula_rate_shipping_inject_admin_css' ) ) {
 		}
 
 		.formula-loc-col {
+			display: flex;
+			flex-direction: column;
+			align-items: flex-start;
+			text-align: left;
+			min-width: 0;
+			width: 100%;
+		}
+
+		.formula-loc-col-state {
+			display: none !important;
+		}
+
+		.formula-mini-target-grid-location[data-has-state="true"] .formula-loc-col-state {
 			display: flex !important;
-			flex-direction: column !important;
-			align-items: flex-start !important;
-			text-align: left !important;
-			min-width: 0 !important;
-			width: 100% !important;
 		}
 
 		.formula-loc-col-label {
@@ -13646,7 +13654,7 @@ if ( ! function_exists( 'formula_rate_shipping_inject_admin_css' ) ) {
 		}
 
 		.formula-mini-target-grid-location {
-			grid-template-columns: 1.2fr 1fr !important;
+			grid-template-columns: 1fr 1fr !important;
 		}
 
 		.formula-mini-target-grid-location[data-has-state="true"] {
@@ -14776,17 +14784,14 @@ if ( ! function_exists( 'formula_rate_shipping_inject_admin_css' ) ) {
 
 				var countryVal = (countryInput.val() || '').trim().toUpperCase();
 				var stateInput = mainRow.find('.formula-loc-state-input');
-				var stateCol   = mainRow.find('.formula-loc-col-state');
 				var grid       = mainRow.find('.formula-mini-target-grid-location');
 				var isSingleCountry = /^[A-Z]{2}$/.test(countryVal) && countryVal !== 'ALL';
 
 				if (isSingleCountry) {
 					stateInput.prop('disabled', false).attr('placeholder', 'e.g. CA, NY, TX or ALL');
-					stateCol.show();
 					grid.attr('data-has-state', 'true');
 				} else {
 					stateInput.prop('disabled', true).attr('placeholder', 'To Set State or Province Only One Country Must Be Selected');
-					stateCol.hide();
 					grid.attr('data-has-state', 'false');
 				}
 			}
