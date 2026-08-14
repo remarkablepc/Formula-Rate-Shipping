@@ -1755,6 +1755,77 @@ class Formula_Evaluator {
 			return (string) $total_cost;
 		}, $formula );
 
+		// Resolve [loop var="i" from=1 to="[qty]" step=1 formula="..."]
+		$formula = preg_replace_callback( '/\[loop\s+([^\]]+)\]/i', function( $matches ) use ( $contents, $context ) {
+			$attr_str = $matches[1];
+
+			$var_name = 'i';
+			if ( preg_match( '/var\s*=\s*[\'"]([a-zA-Z0-9_]+)[\'"]/i', $attr_str, $m ) ) {
+				$var_name = $m[1];
+			}
+
+			$from_expr = '1';
+			if ( preg_match( '/from\s*=\s*[\'"]([^\'"]+)[\'"]/i', $attr_str, $m ) ) {
+				$from_expr = $m[1];
+			} elseif ( preg_match( '/from\s*=\s*([0-9\.\-]+)/i', $attr_str, $m ) ) {
+				$from_expr = $m[1];
+			}
+
+			$to_expr = '1';
+			if ( preg_match( '/to\s*=\s*[\'"]([^\'"]+)[\'"]/i', $attr_str, $m ) ) {
+				$to_expr = $m[1];
+			} elseif ( preg_match( '/to\s*=\s*([0-9\.\-]+)/i', $attr_str, $m ) ) {
+				$to_expr = $m[1];
+			}
+
+			$step_expr = '1';
+			if ( preg_match( '/step\s*=\s*[\'"]([^\'"]+)[\'"]/i', $attr_str, $m ) ) {
+				$step_expr = $m[1];
+			} elseif ( preg_match( '/step\s*=\s*([0-9\.]+)/i', $attr_str, $m ) ) {
+				$step_expr = $m[1];
+			}
+
+			$inner_formula = '';
+			if ( preg_match( '/formula\s*=\s*[\'"]([^\'"]+)[\'"]/i', $attr_str, $m ) ) {
+				$inner_formula = $m[1];
+			}
+
+			if ( empty( $inner_formula ) ) {
+				return '0';
+			}
+
+			try {
+				$from_val = intval( self::evaluate( $from_expr, $contents, $context ) );
+				$to_val   = intval( self::evaluate( $to_expr, $contents, $context ) );
+				$step_val = max( 1, intval( self::evaluate( $step_expr, $contents, $context ) ) );
+			} catch ( Exception $e ) {
+				return '0';
+			}
+
+			if ( $from_val > $to_val ) {
+				return '0';
+			}
+
+			$total = 0.0;
+			$iterations = 0;
+			$max_iterations = 100; // Hard cap at 100 iterations
+
+			for ( $i = $from_val; $i <= $to_val && $iterations < $max_iterations; $i += $step_val ) {
+				$iterations++;
+				$step_formula = preg_replace( '/\[' . preg_quote( $var_name, '/' ) . '\]/i', (string) $i, $inner_formula );
+				$step_formula = preg_replace( '/\b' . preg_quote( $var_name, '/' ) . '\b/i', (string) $i, $step_formula );
+
+				try {
+					$step_result = floatval( self::evaluate( $step_formula, $contents, $context ) );
+					$total += $step_result;
+				} catch ( Exception $e ) {
+					// skip on error
+				}
+			}
+
+			return (string) $total;
+		}, $formula );
+
 
 
 		// [on_sale] or [on_sale category="X"]
@@ -8795,6 +8866,51 @@ function buildLocFormulaRow(idx, ship, hand, isEnabled, bgClass) {
 									return String(totalCost);
 								});
 
+								// Resolve [loop var="i" from=1 to="[qty]" step=1 formula="..."]
+								formula = formula.replace(/\[loop\s+([^\]]+)\]/gi, function(match, attributesStr) {
+									var varName = 'i';
+									var varMatch = attributesStr.match(/var\s*=\s*['"]([a-zA-Z0-9_]+)['"]/i);
+									if (varMatch) varName = varMatch[1];
+
+									var fromExpr = '1';
+									var fromMatch = attributesStr.match(/from\s*=\s*(?:['"]([^'"]+)['"]|([0-9.\-]+))/i);
+									if (fromMatch) fromExpr = fromMatch[1] || fromMatch[2] || '1';
+
+									var toExpr = '1';
+									var toMatch = attributesStr.match(/to\s*=\s*(?:['"]([^'"]+)['"]|([0-9.\-]+))/i);
+									if (toMatch) toExpr = toMatch[1] || toMatch[2] || '1';
+
+									var stepExpr = '1';
+									var stepMatch = attributesStr.match(/step\s*=\s*(?:['"]([^'"]+)['"]|([0-9.]+))/i);
+									if (stepMatch) stepExpr = stepMatch[1] || stepMatch[2] || '1';
+
+									var innerFormula = '';
+									var formulaMatch = attributesStr.match(/formula\s*=\s*['"]([^'"]+)['"]/i);
+									if (formulaMatch) innerFormula = formulaMatch[1];
+
+									if (!innerFormula) return '0';
+
+									var fromVal = parseInt(evaluateFormula(fromExpr), 10) || 1;
+									var toVal = parseInt(evaluateFormula(toExpr), 10) || 1;
+									var stepVal = Math.max(1, parseInt(evaluateFormula(stepExpr), 10) || 1);
+
+									if (fromVal > toVal) return '0';
+
+									var total = 0.0;
+									var iterations = 0;
+									var maxIterations = 100; // Hard cap at 100
+
+									for (var i = fromVal; i <= toVal && iterations < maxIterations; i += stepVal) {
+										iterations++;
+										var stepFormula = innerFormula.replace(new RegExp('\\[' + varName + '\\]', 'gi'), String(i));
+										stepFormula = stepFormula.replace(new RegExp('\\b' + varName + '\\b', 'gi'), String(i));
+										var stepResult = parseFloat(evaluateFormula(stepFormula)) || 0.0;
+										total += stepResult;
+									}
+
+									return String(total);
+								});
+
 
 
 								// Resolve [product="X"] - returns 1 if any item name, SKU, or product number contains X
@@ -11491,11 +11607,11 @@ function buildLocFormulaRow(idx, ship, hand, isEnabled, bgClass) {
 									</div>
 								</details>
 
-								<!-- Accordion 7: Tiered Step Tables & Incremental Scales -->
+								<!-- Accordion 7: Tiered Tables, Incremental Scales & Loops -->
 								<details class="formula-help-accordion" style="margin-bottom: 12px; background: #ffffff; border: 1px solid #cbd5e1; border-radius: 8px; overflow: hidden;">
-									<summary style="padding: 12px 16px; font-weight: 700; font-size: 14px; color: #0f172a; background: #f8fafc; cursor: pointer; user-select: none;">📊 Tiered Step Tables & Incremental Scales ([table] & [scale])</summary>
+									<summary style="padding: 12px 16px; font-weight: 700; font-size: 14px; color: #0f172a; background: #f8fafc; cursor: pointer; user-select: none;">📊 Tiered Tables, Incremental Scales & Loops ([table], [scale], [loop])</summary>
 									<div style="padding: 16px; border-top: 1px solid #e2e8f0;">
-										<p style="margin: 0 0 8px 0;">Replace complex nested <code>if()</code> statements with clean, bracketed table lookups and incremental weight steppers:</p>
+										<p style="margin: 0 0 8px 0;">Replace complex nested <code>if()</code> statements with clean, bracketed table lookups, progressive steppers, or bounded range loops:</p>
 										
 										<h5 style="margin: 10px 0 4px 0; font-size: 13px; color: #0f172a; font-weight: 700;">1. <code>[table on="<variable>" tiers="<threshold:cost>, ..."]</code> (Stepped Bracket Lookup)</h5>
 										<ul style="margin: 0 0 10px 0; padding-left: 20px;">
@@ -11510,7 +11626,13 @@ function buildLocFormulaRow(idx, ship, hand, isEnabled, bgClass) {
 											<li><code>[scale on="[weight]" base_cost=25.00 base_units=50 rate=5.00 step=10]</code> – Freight: $25.00 base up to 50 lbs, then +$5.00 for every 10 lbs beyond 50 lbs.</li>
 											<li><code>[scale on="[qty]" base_cost=4.00 base_units=1 rate=2.00 step=3]</code> – $4.00 base for 1 item, then +$2.00 for every 3 extra items.</li>
 										</ul>
-										<p style="margin: 0; background: #e0f2fe; border: 1px solid #7dd3fc; border-radius: 6px; padding: 8px 12px; font-size: 12px; color: #0369a1;"><strong>Formula Integration:</strong> <code>[table]</code> and <code>[scale]</code> can be combined with other formula math, fees, and conditions (e.g. <code>[table on="[weight]" tiers="..."] + [rate percent=5] + [fee label="Fuel" percent=2]</code>).</p>
+
+										<h5 style="margin: 12px 0 4px 0; font-size: 13px; color: #0f172a; font-weight: 700;">3. <code>[loop var="i" from=1 to="[qty]" step=1 formula="..."]</code> (Bounded Range Accumulator Loop)</h5>
+										<ul style="margin: 0 0 10px 0; padding-left: 20px;">
+											<li><code>[loop var="i" from=1 to="[qty]" formula="if(i <= 3, 5.00, 2.50)"]</code> – Iterates from 1 to total quantity, evaluating each step (e.g. $5.00 each for items 1-3, and $2.50 for items 4+). Sums the total.</li>
+											<li><code>[loop var="n" from=1 to="[qty]" formula="10.00 / n"]</code> – Progressive diminishing surcharge per additional item.</li>
+										</ul>
+										<p style="margin: 0; background: #e0f2fe; border: 1px solid #7dd3fc; border-radius: 6px; padding: 8px 12px; font-size: 12px; color: #0369a1;"><strong>Safety & Integration:</strong> Loops are hard-capped at <strong>100 iterations</strong> for safety. <code>[table]</code>, <code>[scale]</code>, and <code>[loop]</code> can be freely combined with fees and formulas (e.g. <code>[table on="[weight]" tiers="..."] + [rate percent=5] + [fee label="Fuel" percent=2]</code>).</p>
 									</div>
 								</details>
 

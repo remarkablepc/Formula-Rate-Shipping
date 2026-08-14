@@ -18,6 +18,20 @@ Most WooCommerce shipping plugins fall into two camps: **table-rate** (rigid loo
 
 ---
 
+## Quick Start Guide (3-Minute Setup)
+
+Get dynamic shipping up and running in 4 easy steps:
+
+1. **Install & Activate**: Download `formula-rate-shipping.zip` from GitHub releases, upload to **Plugins > Add New > Upload Plugin**, and activate it.
+2. **Enable the Shipping Method**: Go to **WooCommerce > Settings > Shipping > Shipping Zones**, add a shipping zone (or click an existing zone), click **Add shipping method**, and choose **Formula Rate Shipping**.
+3. **Write Your First Formula**: Open the method settings and enter your rate formula in the **Default Shipping Formula** field:
+   - *Simple base + per-item*: `5.00 + ([qty] - 1) * 1.50`
+   - *Weight bracket lookup*: `[table on="[weight]" tiers="1:4.50, 5:8.00, 10:12.50, default:20.00"]`
+   - *Free shipping for subscribers*: `if([user="Subscriber"], 0.00, 5.99)`
+4. **Test in Real Time**: Scroll to **Card 4 (Test Cart Simulator)**, add test products or set weights/destinations, and watch the formula evaluate live with complete trace logs!
+
+---
+
 ## Maturity Status
 
 **Version 0.70.0 -- Production-Ready Release**
@@ -137,7 +151,7 @@ Formulas support standard mathematical expressions and variables evaluated per m
 - **`[sale label="..." percent=10]` (Cart Promo Credit Line Item)** -- Creates a standalone promo credit line item (e.g. `Flash Sale Promo: -$4.20`) with red sale tag.
 - **`icon="none"` Mode** -- Renders clean, text-only cart line items without SVG icons.
 
-#### Tiered Step Tables ([table]) & Progressive Scales ([scale])
+#### Tiered Step Tables ([table]), Progressive Scales ([scale]) & Bounded Loops ([loop])
 
 - **`[table on="<variable>" tiers="threshold:cost, ..."]`** -- Stepped bracket table lookup. Replaces deeply nested `if()` chains with a concise threshold-to-cost matrix:
   - `[table on="[weight]" tiers="1:4.50, 5:8.00, 10:12.50, 20:18.00, default:25.00"]` -- Flat bracket lookup by weight.
@@ -147,6 +161,9 @@ Formulas support standard mathematical expressions and variables evaluated per m
   - `[scale on="[weight]" base_cost=5.00 base_units=2 rate=1.50 step=1]` -- $5.00 base for first 2 lbs, then +$1.50 for each additional 1 lb.
   - `[scale on="[weight]" base_cost=25.00 base_units=50 rate=5.00 step=10]` -- Heavy freight: $25.00 base for first 50 lbs, then +$5.00 for every 10 lbs beyond 50 lbs.
   - `[scale on="[qty]" base_cost=4.00 base_units=1 rate=2.00 step=3]` -- $4.00 for 1st item, then +$2.00 for every 3 additional items.
+- **`[loop var="i" from=1 to="[qty]" step=1 formula="..."]`** -- Bounded range accumulator loop (capped at 100 iterations for safety):
+  - `[loop var="i" from=1 to="[qty]" formula="if(i <= 3, 5.00, 2.50)"]` -- Evaluates each step from 1 to total quantity ($5.00 each for items 1-3, $2.50 each for items 4+) and sums the total.
+  - `[loop var="n" from=1 to="[qty]" formula="10.00 / n"]` -- Diminishing surcharge per additional item.
 
 ### User Role & Identity Variables
 
