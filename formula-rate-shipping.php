@@ -12887,7 +12887,7 @@ if ( ! function_exists( 'formula_rate_shipping_inject_frontend_css' ) ) {
 	display: none;
 }
 
-.formula-mini-target-grid-location input[type="text"] {
+.formula-mini-target-grid-location input[type="text"]:not(.formula-chip-editor) {
 	width: 100% !important;
 	box-sizing: border-box !important;
 	border: 1px solid #94a3b8 !important;
@@ -13011,7 +13011,7 @@ select[name*="[type]"] {
 	box-sizing: border-box !important;
 }
 
-.formula-mini-target-grid-location input[type="text"] {
+.formula-mini-target-grid-location input[type="text"]:not(.formula-chip-editor) {
 	width: 100% !important;
 	box-sizing: border-box !important;
 	border: 1px solid #94a3b8 !important;
@@ -13727,24 +13727,55 @@ if ( ! function_exists( 'formula_rate_shipping_inject_admin_css' ) ) {
 
 		}
 
-		.formula-chip-editor {
-
+		.formula-chip-editor,
+		.formula-chip-field input,
+		.formula-chip-field input[type="text"],
+		.formula-chip-field input.formula-chip-editor,
+		.formula-chip-editor-wrap input,
+		.formula-chip-editor-wrap input[type="text"],
+		.formula-shipping-rules-table .formula-chip-field input,
+		.formula-shipping-rules-table .formula-chip-field input[type="text"],
+		.formula-shipping-rules-table input.formula-chip-editor,
+		.formula-mini-target-shell .formula-chip-field input,
+		.formula-mini-target-shell .formula-chip-field input[type="text"],
+		.formula-mini-target-grid-location .formula-chip-field input,
+		.formula-mini-target-grid-location .formula-chip-field input[type="text"],
+		table.formula-shipping-rules-table td .formula-chip-field input[type="text"],
+		table.wc_input_table td .formula-chip-field input[type="text"] {
 			width: 100% !important;
-
 			height: 26px !important;
-
+			min-height: 26px !important;
+			max-height: 26px !important;
 			padding: 0 4px !important;
-
 			border: 0 !important;
-
+			border-style: none !important;
 			box-shadow: none !important;
-
 			outline: none !important;
-
 			background: transparent !important;
-
 			line-height: 24px !important;
+			margin: 0 !important;
+		}
 
+		.formula-chip-editor:focus,
+		.formula-chip-field input:focus,
+		.formula-chip-field input[type="text"]:focus,
+		.formula-chip-field input.formula-chip-editor:focus,
+		.formula-chip-editor-wrap input:focus,
+		.formula-chip-editor-wrap input[type="text"]:focus,
+		.formula-shipping-rules-table .formula-chip-field input:focus,
+		.formula-shipping-rules-table .formula-chip-field input[type="text"]:focus,
+		.formula-shipping-rules-table input.formula-chip-editor:focus,
+		.formula-mini-target-shell .formula-chip-field input:focus,
+		.formula-mini-target-shell .formula-chip-field input[type="text"]:focus,
+		.formula-mini-target-grid-location .formula-chip-field input:focus,
+		.formula-mini-target-grid-location .formula-chip-field input[type="text"]:focus,
+		table.formula-shipping-rules-table td .formula-chip-field input[type="text"]:focus,
+		table.wc_input_table td .formula-chip-field input[type="text"]:focus {
+			border: 0 !important;
+			border-style: none !important;
+			box-shadow: none !important;
+			outline: none !important;
+			background: transparent !important;
 		}
 
 		.formula-formula-error {
@@ -14573,7 +14604,7 @@ if ( ! function_exists( 'formula_rate_shipping_inject_admin_css' ) ) {
 
 		.formula-shipping-rules-table select,
 
-		.formula-shipping-rules-table input[type="text"] {
+		.formula-shipping-rules-table input[type="text"]:not(.formula-chip-editor) {
 
 			width: 100% !important;
 
@@ -14597,6 +14628,17 @@ if ( ! function_exists( 'formula_rate_shipping_inject_admin_css' ) ) {
 
 			vertical-align: middle !important;
 
+		}
+
+		/* ENFORCE NO INNER BORDER ON CHIP EDITORS IN RULES TABLE */
+		.formula-shipping-rules-table .formula-chip-field input,
+		.formula-shipping-rules-table .formula-chip-field input[type="text"],
+		.formula-shipping-rules-table input.formula-chip-editor {
+			border: 0 !important;
+			border-style: none !important;
+			box-shadow: none !important;
+			outline: none !important;
+			background: transparent !important;
 		}
 
 	</style>
