@@ -8,7 +8,7 @@
 
  * Description: Calculate dynamic shipping and handling rates using custom formulas, priority item rules (Categories, Tags & Attributes), location overrides, and an interactive real-time tester.
 
- * Version: 0.67.3
+ * Version: 0.67.4
 
  * Author:      RemarkablePC
 
@@ -7630,9 +7630,9 @@ function buildLocFormulaRow(idx, ship, hand, isEnabled, bgClass) {
 
 								<!-- SECTION 1: Destination Address -->
 
-								<div class="formula-preview-section" style="margin-bottom: 20px;">
+								<div class="formula-preview-section" style="margin-bottom: 20px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 18px 20px;">
 
-									<h4>1. <?php esc_html_e( 'Destination Address', 'formula-rate-shipping' ); ?></h4>
+									<h4 style="margin: 0 0 12px 0; font-size: 14px; font-weight: 700; color: #0f172a;">1. <?php esc_html_e( 'Destination Address', 'formula-rate-shipping' ); ?></h4>
 
 										<div class="formula-preview-form-group" style="display: grid; grid-template-columns: 140px 150px 140px 1fr; gap: 12px; align-items: end;">
 
@@ -7942,13 +7942,17 @@ function buildLocFormulaRow(idx, ship, hand, isEnabled, bgClass) {
 
 									<!-- SECTION 4: Technical Data & Calculation Trace Log (at bottom) -->
 
-									<div class="formula-preview-section">
+									<details style="margin-top: 20px; background: #ffffff; border: 1px solid #cbd5e1; border-radius: 8px; overflow: hidden;" open>
 
-										<h4>4. <?php esc_html_e( 'Technical Data & Calculation Trace Log', 'formula-rate-shipping' ); ?></h4>
+										<summary style="padding: 12px 16px; font-weight: 700; font-size: 13px; color: #0f172a; background: #f8fafc; cursor: pointer; user-select: none;">🔍 <?php esc_html_e( '4. Technical Data & Calculation Trace Log', 'formula-rate-shipping' ); ?></summary>
 
-										<pre id="formula_sim_trace" style="margin:0; padding:12px; background:#0f172a; color:#f8fafc; font-family:Consolas, Monaco, monospace; font-size:12px; border-radius:6px; min-height: 200px; max-height: 380px; overflow-y: auto; white-space: pre-wrap; line-height: 1.5;"></pre>
+										<div style="padding: 14px; border-top: 1px solid #e2e8f0; background: #0f172a;">
 
-									</div>
+											<pre id="formula_sim_trace" style="margin:0; padding:4px; background:transparent; color:#38bdf8; font-family:Consolas, Monaco, monospace; font-size:12px; min-height: 180px; max-height: 380px; overflow-y: auto; white-space: pre-wrap; line-height: 1.5;"></pre>
+
+										</div>
+
+									</details>
 
 								</div>
 
