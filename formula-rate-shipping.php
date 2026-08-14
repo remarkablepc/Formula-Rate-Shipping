@@ -8,7 +8,7 @@
 
  * Description: Calculate dynamic shipping and handling rates using custom formulas, priority item rules (Categories, Tags & Attributes), location overrides, and an interactive real-time tester.
 
- * Version: 0.62.9
+ * Version: 0.63.0
 
  * Author:      RemarkablePC
 
@@ -13645,6 +13645,8 @@ if ( ! function_exists( 'formula_rate_shipping_inject_admin_css' ) ) {
 			width: 100% !important;
 			max-width: 100% !important;
 			box-sizing: border-box !important;
+			display: block !important;
+			flex: 1 1 100% !important;
 		}
 
 		.formula-mini-target-grid {
@@ -13652,6 +13654,8 @@ if ( ! function_exists( 'formula_rate_shipping_inject_admin_css' ) ) {
 			gap: 12px !important;
 			align-items: end !important;
 			width: 100% !important;
+			max-width: 100% !important;
+			box-sizing: border-box !important;
 		}
 
 		.formula-loc-col {
@@ -13661,6 +13665,16 @@ if ( ! function_exists( 'formula_rate_shipping_inject_admin_css' ) ) {
 			text-align: left;
 			min-width: 0;
 			width: 100%;
+			max-width: 100%;
+		}
+
+		.formula-loc-col-city,
+		.formula-loc-city-wrap,
+		input.formula-loc-location-input {
+			width: 100% !important;
+			max-width: 100% !important;
+			box-sizing: border-box !important;
+			flex: 1 1 100% !important;
 		}
 
 		.formula-loc-col-state {
@@ -13685,15 +13699,19 @@ if ( ! function_exists( 'formula_rate_shipping_inject_admin_css' ) ) {
 		}
 
 		.formula-mini-target-grid-location {
+			display: grid !important;
 			grid-template-columns: 140px 1fr !important;
 			width: 100% !important;
 			max-width: 100% !important;
+			box-sizing: border-box !important;
 		}
 
 		.formula-mini-target-grid-location[data-has-state="true"] {
+			display: grid !important;
 			grid-template-columns: 140px 150px 1fr !important;
 			width: 100% !important;
 			max-width: 100% !important;
+			box-sizing: border-box !important;
 		}
 
 		.formula-mini-target-grid-environment {

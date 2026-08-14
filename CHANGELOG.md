@@ -1,3 +1,6 @@
+## v0.63.0 - 2026-08-13
+- Bug fixes and minor updates.
+
 ## v0.62.9 - 2026-08-13
 - Bug fixes and minor updates.
 
