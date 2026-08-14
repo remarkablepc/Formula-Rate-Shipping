@@ -8,7 +8,7 @@
 
  * Description: Calculate dynamic shipping and handling rates using custom formulas, priority item rules (Categories, Tags & Attributes), location overrides, and an interactive real-time tester.
 
- * Version: 0.67.0
+ * Version: 0.67.1
 
  * Author:      RemarkablePC
 
@@ -4551,7 +4551,7 @@ function formula_rate_shipping_init() {
 
 							<!-- Row 1: Shipping Name (Left) + Subtle Checkboxes under Shipping Name, Handling Fee Name (Right) -->
 
-							<div class="formula-two-col-grid" style="margin-bottom: 20px;">
+							<div class="formula-two-col-grid" id="formula_row1_grid" style="margin-bottom: 20px;">
 
 								<div class="formula-field-group">
 
@@ -4641,16 +4641,16 @@ function formula_rate_shipping_init() {
 								</div>
 
 								<!-- Custom iCal Feed Options -->
-								<div id="formula_custom_ical_wrap" style="margin-top: 10px; padding-top: 10px; border-top: 1px dashed #cbd5e1;">
+								<div id="formula_custom_ical_wrap" style="display: none; margin-top: 10px; padding-top: 10px; border-top: 1px dashed #cbd5e1;">
 									<label for="formula_custom_ical_url" style="font-size: 12px; font-weight: 600; color: #334155; display: block; margin-bottom: 4px;">Custom iCal Feed URL (.ics)</label>
 									<input type="url" name="formula_shipping_custom_ical_url" id="formula_custom_ical_url" value="<?php echo esc_attr( get_option( 'formula_shipping_custom_ical_url', '' ) ); ?>" placeholder="https://calendar.google.com/calendar/ical/.../public/basic.ics" style="width: 100%; font-size: 12px; margin-bottom: 8px;" />
 									
 									<label style="font-size: 11px; font-weight: 600; color: #475569; display: block; margin-bottom: 4px;">Calendar Event Filter Mode</label>
-									<select name="formula_shipping_custom_ical_filter" id="formula_custom_ical_filter" style="width: 100%; font-size: 12px;">
+									<select name="formula_shipping_custom_ical_filter" id="formula_custom_ical_filter" style="width: 100%; max-width: 100%; box-sizing: border-box; height: 36px; padding: 6px 28px 6px 10px; font-size: 12px; border: 1px solid #cbd5e1; border-radius: 4px; background: #ffffff;">
 										<option value="all_events" <?php selected( get_option( 'formula_shipping_custom_ical_filter', 'all_events' ), 'all_events' ); ?>>Use All Calendar Events (Any event today counts as a holiday)</option>
-										<option value="prefix_holiday" <?php selected( get_option( 'formula_shipping_custom_ical_filter' ), 'prefix_holiday' ); ?>>Filter by 'Holiday:' Prefix (Only events titled "Holiday: Festivus" or "Holiday: Sale")</option>
+										<option value="prefix_holiday" <?php selected( get_option( 'formula_shipping_custom_ical_filter' ), 'prefix_holiday' ); ?>>Filter by 'Holiday:' Prefix (Only events titled "Holiday: Festivus", "Holiday: Star Wars Day", etc.)</option>
 									</select>
-									<p class="description" style="margin: 4px 0 0; font-size: 11px; color: #64748b; line-height: 1.4;">Paste your public Google Calendar, Apple iCloud, or Outlook iCal (.ics) URL. When using 'Holiday:' prefix mode, events titled <code>Holiday: Festivus</code> evaluate <code>[holiday]</code> cleanly to <code>Festivus</code>.</p>
+									<p class="description" style="margin: 4px 0 0; font-size: 11px; color: #64748b; line-height: 1.4;">Paste your public Google Calendar, Apple iCloud, or Outlook iCal (.ics) URL. When using 'Holiday:' prefix mode, events titled <code>Holiday: Festivus</code>, <code>Holiday: Star Wars Day</code>, or <code>Holiday: Summer Sale</code> evaluate <code>[holiday]</code> cleanly to <code>Festivus</code>, <code>Star Wars Day</code>, or <code>Summer Sale</code>.</p>
 								</div>
 							</div>
 
@@ -4690,7 +4690,7 @@ function formula_rate_shipping_init() {
 
 								
 
-								<div class="formula-two-col-grid" style="margin-bottom: 0;">
+								<div class="formula-two-col-grid" id="formula_default_formulas_grid" style="margin-bottom: 0;">
 
 									<div class="formula-field-group">
 
@@ -14994,22 +14994,34 @@ if ( ! function_exists( 'formula_rate_shipping_inject_admin_css' ) ) {
 
 
 			function toggleSettingsVisibility() {
-
 				var handlingCombine = $('[name*="handling_combine"]').is(':checked');
-
 				var handlingTitleGroup = $('#formula_handling_title_group');
+				var handlingFormulaGroup = $('#formula_default_handling_formula').closest('.formula-field-group');
+				var row1Grid = $('#formula_row1_grid');
+				var defaultGrid = $('#formula_default_formulas_grid');
 
 				if (handlingCombine) {
-
 					handlingTitleGroup.hide();
-
+					handlingFormulaGroup.hide();
+					if (row1Grid.length) row1Grid.css('grid-template-columns', '1fr');
+					if (defaultGrid.length) defaultGrid.css('grid-template-columns', '1fr');
 				} else {
-
 					handlingTitleGroup.show();
-
+					handlingFormulaGroup.show();
+					if (row1Grid.length) row1Grid.css('grid-template-columns', '1fr 1fr');
+					if (defaultGrid.length) defaultGrid.css('grid-template-columns', '1fr 1fr');
 				}
 
+				var holidayProvider = $('#formula_holiday_provider').val();
+				var customIcalWrap = $('#formula_custom_ical_wrap');
+				if (holidayProvider === 'custom_ical') {
+					customIcalWrap.slideDown(200);
+				} else {
+					customIcalWrap.hide();
+				}
 			}
+
+			$(document.body).on('change', '#formula_holiday_provider', toggleSettingsVisibility);
 
 
 
