@@ -8,7 +8,7 @@
 
  * Description: Calculate dynamic shipping and handling rates using custom formulas, priority item rules (Categories, Tags & Attributes), location overrides, and an interactive real-time tester.
 
- * Version: 0.66.0
+ * Version: 0.67.0
 
  * Author:      RemarkablePC
 
@@ -1258,69 +1258,100 @@ class Formula_Evaluator {
 
 
 		if ( ! empty( $country_code ) && strlen( $country_code ) === 2 ) {
-
 			$country_code  = strtoupper( $country_code );
-
 			$transient_key = "formula_holidays_{$country_code}_{$year}";
-
 			$api_holidays  = get_transient( $transient_key );
 
-
-
 			if ( false === $api_holidays ) {
-
 				$api_url  = "https://date.nager.at/api/v3/PublicHolidays/{$year}/{$country_code}";
-
 				$response = wp_remote_get( $api_url, array( 'timeout' => 3 ) );
-
 				if ( ! is_wp_error( $response ) && wp_remote_retrieve_response_code( $response ) === 200 ) {
-
 					$body = wp_remote_retrieve_body( $response );
-
 					$data = json_decode( $body, true );
-
 					$api_holidays = array();
-
 					if ( is_array( $data ) ) {
-
 						foreach ( $data as $item ) {
-
 							if ( isset( $item['date'] ) && isset( $item['name'] ) ) {
-
 								$api_holidays[ $item['date'] ] = $item['name'];
-
 							}
-
 						}
-
 					}
-
-					set_transient( $transient_key, $api_holidays, 60 * DAY_IN_SECONDS );
-
+					set_transient( $transient_key, $api_holidays, 30 * DAY_IN_SECONDS );
 				} else {
-
-					$api_holidays = array();
-
-					set_transient( $transient_key, $api_holidays, DAY_IN_SECONDS );
-
+					set_transient( $transient_key, array(), 1 * DAY_IN_SECONDS );
 				}
-
 			}
-
-
 
 			if ( is_array( $api_holidays ) && isset( $api_holidays[ $full_date ] ) ) {
-
 				$holidays[] = $api_holidays[ $full_date ];
-
 			}
-
 		}
 
+		// Check Custom iCal / Google / Apple Calendar URL if configured
+		$holiday_provider = get_option( 'formula_shipping_holiday_provider', 'built_in' );
+		if ( 'custom_ical' === $holiday_provider ) {
+			$ical_url = get_option( 'formula_shipping_custom_ical_url', '' );
+			$ical_filter = get_option( 'formula_shipping_custom_ical_filter', 'all_events' );
+			if ( ! empty( $ical_url ) ) {
+				$custom_holidays = self::fetch_custom_ical_holidays( $ical_url, $target_timestamp, $ical_filter );
+				if ( ! empty( $custom_holidays ) ) {
+					$holidays = array_merge( $holidays, $custom_holidays );
+				}
+			}
+		}
 
+		return array_unique( $holidays );
+	}
 
-		return array_values( array_unique( $holidays ) );
+	public static function fetch_custom_ical_holidays( $url, $target_timestamp, $filter_mode = 'all_events' ) {
+		if ( empty( $url ) || ! filter_var( $url, FILTER_VALIDATE_URL ) ) {
+			return array();
+		}
 
+		$cache_key = 'formula_ical_' . md5( $url );
+		$ical_data = get_transient( $cache_key );
+
+		if ( false === $ical_data ) {
+			$response = wp_remote_get( $url, array( 'timeout' => 8, 'sslverify' => false ) );
+			if ( is_wp_error( $response ) || 200 !== wp_remote_retrieve_response_code( $response ) ) {
+				return array();
+			}
+			$ical_data = wp_remote_retrieve_body( $response );
+			set_transient( $cache_key, $ical_data, 6 * HOUR_IN_SECONDS );
+		}
+
+		if ( empty( $ical_data ) ) {
+			return array();
+		}
+
+		$target_date = date( 'Ymd', $target_timestamp );
+		$holidays    = array();
+
+		preg_match_all( '/BEGIN:VEVENT(.*?)END:VEVENT/s', $ical_data, $events );
+		if ( ! empty( $events[1] ) ) {
+			foreach ( $events[1] as $event_block ) {
+				$dtstart = '';
+				$summary = '';
+				if ( preg_match( '/DTSTART;?[^:]*:([0-9]{8})/i', $event_block, $m ) ) {
+					$dtstart = $m[1];
+				}
+				if ( preg_match( '/SUMMARY:(.*?)[\r\n]/i', $event_block, $m ) ) {
+					$summary = trim( $m[1] );
+				}
+
+				if ( $dtstart === $target_date && '' !== $summary ) {
+					if ( 'prefix_holiday' === $filter_mode ) {
+						if ( preg_match( '/^Holiday:\s*(.+)$/i', $summary, $sm ) ) {
+							$holidays[] = trim( $sm[1] );
+						}
+					} else {
+						$holidays[] = $summary;
+					}
+				}
+			}
+		}
+
+		return array_unique( $holidays );
 	}
 
 
@@ -1538,7 +1569,7 @@ class Formula_Evaluator {
 		// [message="..."] (no icon), [notice="..."] (info icon), [warning="..."] (warning icon)
 		$formula = preg_replace_callback( '/\[(message|notice|warning)\s*=\s*[\'"]([^\'"]+)[\'"](?:\s+position\s*=\s*[\'"]([^\'"]+)[\'"])?\]/i', function( $matches ) {
 			if ( isset( $GLOBALS['formula_shipping_current_notices'] ) && is_array( $GLOBALS['formula_shipping_current_notices'] ) ) {
-				$pos = ! empty( $matches[3] ) ? strtolower( trim( $matches[3] ) ) : 'under_rate';
+				$pos = ! empty( $matches[3] ) ? strtolower( trim( $matches[3] ) ) : 'cart_table';
 				$GLOBALS['formula_shipping_current_notices'][] = array(
 					'type'     => strtolower( $matches[1] ),
 					'message'  => trim( $matches[2] ),
@@ -4578,40 +4609,49 @@ function formula_rate_shipping_init() {
 
 
 
-							<!-- Default Holiday Country Setting -->
-
-							<div class="formula-field-group" style="margin-top: 6px; margin-bottom: 14px; padding: 12px 14px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px;">
-
+							<!-- Holiday Calendar Settings -->
+							<div class="formula-field-group" style="margin-top: 6px; margin-bottom: 14px; padding: 14px 16px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px;">
 								<label for="<?php echo esc_attr( $this->get_field_key( 'holiday_country' ) ); ?>" style="font-weight: 600; font-size: 13px; color: #1e293b; margin-bottom: 6px; display: block;">
-
-									<?php esc_html_e( 'Default Holiday Calendar Country', 'formula-rate-shipping' ); ?>
-
+									<?php esc_html_e( 'Default Holiday Calendar Country & Source', 'formula-rate-shipping' ); ?>
 								</label>
 
-								<select name="<?php echo esc_attr( $this->get_field_key( 'holiday_country' ) ); ?>" id="<?php echo esc_attr( $this->get_field_key( 'holiday_country' ) ); ?>" class="formula-holiday-country-select">
+								<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 10px;">
+									<div>
+										<label style="font-size: 11px; font-weight: 600; color: #475569; margin-bottom: 4px; display: block;">Calendar Source</label>
+										<select name="<?php echo esc_attr( $this->get_field_key( 'holiday_provider' ) ); ?>" id="formula_holiday_provider" class="formula-holiday-country-select" style="width: 100%;">
+											<option value="built_in" <?php selected( get_option( 'formula_shipping_holiday_provider', 'built_in' ), 'built_in' ); ?>>Built-in Public Holidays (TimeAndDate / Standard)</option>
+											<option value="custom_ical" <?php selected( get_option( 'formula_shipping_holiday_provider' ), 'custom_ical' ); ?>>Custom iCal / Google / Apple Calendar URL (.ics)</option>
+										</select>
+									</div>
 
-									<option value="store" <?php selected( $holiday_country, 'store' ); ?>><?php esc_html_e( 'Store Base Country (Warehouse Origin)', 'formula-rate-shipping' ); ?></option>
+									<div>
+										<label style="font-size: 11px; font-weight: 600; color: #475569; margin-bottom: 4px; display: block;">Country Region</label>
+										<select name="<?php echo esc_attr( $this->get_field_key( 'holiday_country' ) ); ?>" id="<?php echo esc_attr( $this->get_field_key( 'holiday_country' ) ); ?>" class="formula-holiday-country-select" style="width: 100%;">
+											<option value="store" <?php selected( $holiday_country, 'store' ); ?>><?php esc_html_e( 'Store Base Country (Warehouse Origin)', 'formula-rate-shipping' ); ?></option>
+											<option value="customer_shipping" <?php selected( $holiday_country, 'customer_shipping' ); ?>><?php esc_html_e( 'Customer Shipping Country (Gift Recipient / Destination)', 'formula-rate-shipping' ); ?></option>
+											<option value="customer_billing" <?php selected( $holiday_country, 'customer_billing' ); ?>><?php esc_html_e( 'Customer Billing Country (Purchaser / Gifter)', 'formula-rate-shipping' ); ?></option>
+											<option value="US" <?php selected( $holiday_country, 'US' ); ?>>United States (US)</option>
+											<option value="CA" <?php selected( $holiday_country, 'CA' ); ?>>Canada (CA)</option>
+											<option value="GB" <?php selected( $holiday_country, 'GB' ); ?>>United Kingdom (GB)</option>
+											<option value="AU" <?php selected( $holiday_country, 'AU' ); ?>>Australia (AU)</option>
+											<option value="DE" <?php selected( $holiday_country, 'DE' ); ?>>Germany (DE)</option>
+											<option value="FR" <?php selected( $holiday_country, 'FR' ); ?>>France (FR)</option>
+										</select>
+									</div>
+								</div>
 
-									<option value="customer_shipping" <?php selected( $holiday_country, 'customer_shipping' ); ?>><?php esc_html_e( 'Customer Shipping Country (Gift Recipient / Destination)', 'formula-rate-shipping' ); ?></option>
-
-									<option value="customer_billing" <?php selected( $holiday_country, 'customer_billing' ); ?>><?php esc_html_e( 'Customer Billing Country (Purchaser / Gifter)', 'formula-rate-shipping' ); ?></option>
-
-									<option value="US" <?php selected( $holiday_country, 'US' ); ?>>United States (US)</option>
-
-									<option value="CA" <?php selected( $holiday_country, 'CA' ); ?>>Canada (CA)</option>
-
-									<option value="GB" <?php selected( $holiday_country, 'GB' ); ?>>United Kingdom (GB)</option>
-
-									<option value="AU" <?php selected( $holiday_country, 'AU' ); ?>>Australia (AU)</option>
-
-									<option value="DE" <?php selected( $holiday_country, 'DE' ); ?>>Germany (DE)</option>
-
-									<option value="FR" <?php selected( $holiday_country, 'FR' ); ?>>France (FR)</option>
-
-								</select>
-
-								<p class="description" style="margin: 6px 0 0; font-size: 11px; color: #64748b; line-height: 1.4;"><?php esc_html_e( 'Determines the default public holiday calendar used by [is_holiday] and [holiday] formula tags.', 'formula-rate-shipping' ); ?></p>
-
+								<!-- Custom iCal Feed Options -->
+								<div id="formula_custom_ical_wrap" style="margin-top: 10px; padding-top: 10px; border-top: 1px dashed #cbd5e1;">
+									<label for="formula_custom_ical_url" style="font-size: 12px; font-weight: 600; color: #334155; display: block; margin-bottom: 4px;">Custom iCal Feed URL (.ics)</label>
+									<input type="url" name="formula_shipping_custom_ical_url" id="formula_custom_ical_url" value="<?php echo esc_attr( get_option( 'formula_shipping_custom_ical_url', '' ) ); ?>" placeholder="https://calendar.google.com/calendar/ical/.../public/basic.ics" style="width: 100%; font-size: 12px; margin-bottom: 8px;" />
+									
+									<label style="font-size: 11px; font-weight: 600; color: #475569; display: block; margin-bottom: 4px;">Calendar Event Filter Mode</label>
+									<select name="formula_shipping_custom_ical_filter" id="formula_custom_ical_filter" style="width: 100%; font-size: 12px;">
+										<option value="all_events" <?php selected( get_option( 'formula_shipping_custom_ical_filter', 'all_events' ), 'all_events' ); ?>>Use All Calendar Events (Any event today counts as a holiday)</option>
+										<option value="prefix_holiday" <?php selected( get_option( 'formula_shipping_custom_ical_filter' ), 'prefix_holiday' ); ?>>Filter by 'Holiday:' Prefix (Only events titled "Holiday: Festivus" or "Holiday: Sale")</option>
+									</select>
+									<p class="description" style="margin: 4px 0 0; font-size: 11px; color: #64748b; line-height: 1.4;">Paste your public Google Calendar, Apple iCloud, or Outlook iCal (.ics) URL. When using 'Holiday:' prefix mode, events titled <code>Holiday: Festivus</code> evaluate <code>[holiday]</code> cleanly to <code>Festivus</code>.</p>
+								</div>
 							</div>
 
 
