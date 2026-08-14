@@ -12999,6 +12999,10 @@ select[name*="[type]"] {
 
 
 /* STRICT SINGLE VISIBLE INPUT CONTROL FOR LOCATION TARGET WRAPS */
+.formula-mini-target-tabs {
+	display: none !important;
+}
+
 .formula-loc-country-wrap,
 .formula-loc-state-wrap,
 .formula-loc-city-wrap {
@@ -13603,6 +13607,10 @@ if ( ! function_exists( 'formula_rate_shipping_inject_admin_css' ) ) {
 
 			color: #075985 !important;
 
+		}
+
+		.formula-mini-target-tabs {
+			display: none !important;
 		}
 
 		.formula-mini-target-grid {
@@ -14752,165 +14760,9 @@ if ( ! function_exists( 'formula_rate_shipping_inject_admin_css' ) ) {
 						shell.find('.formula-mini-target-tab-country').toggleClass('has-data', countryVal !== '' && countryVal !== 'ALL');
 						shell.find('.formula-mini-target-tab-state').toggleClass('has-data', stateVal !== '' && stateVal !== 'ALL');
 						shell.find('.formula-mini-target-tab-city').toggleClass('has-data', cityVal !== '' && cityVal !== 'ALL');
-					}
-				});
-			}
-
-			// Single visible input tab switcher for Location mini-target shell
-			$(document.body).on('click', '.formula-mini-target-tab[data-target-field]', function(e) {
-
-				e.preventDefault();
-
-				var tab = $(this);
-
-				if (tab.hasClass('formula-state-disabled')) {
-					return;
-				}
-
-				var shell = tab.closest('.formula-mini-target-shell-location');
-
-				if (!shell.length) return;
-
-				var targetField = tab.data('target-field');
-
-				// Update active tab
-				shell.find('.formula-mini-target-tab[data-target-field]').removeClass('is-active');
-
-				tab.addClass('is-active');
-
-				// Show only the target wrap
-				shell.find('.formula-loc-country-wrap').toggle(targetField === 'country');
-
-				shell.find('.formula-loc-state-wrap').toggle(targetField === 'state');
-
-				shell.find('.formula-loc-city-wrap').toggle(targetField === 'city');
-
-				// Focus the visible input
-				if (targetField === 'country') {
-					shell.find('.formula-loc-country-wrap input').trigger('focus');
-				} else if (targetField === 'state') {
-					shell.find('.formula-loc-state-wrap input').trigger('focus');
-				} else if (targetField === 'city') {
-					shell.find('.formula-loc-city-wrap input').trigger('focus');
-				}
-
-			});
-
-			$(document.body).on('input change blur keyup', '.formula-loc-country-input', function() {
-				var mainRow = $(this).closest('tr');
-				updateLocStateVisibility(mainRow);
-				updateFieldDataIndicators($(this));
-			});
-
-			$(document.body).on('input change blur keyup', 'input[type="text"], input[type="number"], select', function() {
-				updateFieldDataIndicators($(this));
-			});
-
-			
-			// ── Location tab shell initialisation ──────────────────────────────────
-			// Runs once on page load to ensure only the active tab's input is visible.
-			function initLocationShell(shell) {
-
-				var tabs = shell.find('.formula-mini-target-tab[data-target-field]');
-
-				var activeTab = tabs.filter('.is-active').first();
-
-				if (!activeTab.length) {
-
-					// Default to country if nothing is active
-					activeTab = tabs.filter('[data-target-field="country"]').first();
-
-					activeTab.addClass('is-active');
-
-				}
-
-				var activeField = activeTab.data('target-field');
-
-				// Show only the active wrap, hide the others
-				shell.find('.formula-loc-country-wrap').toggle(activeField === 'country');
-
-				shell.find('.formula-loc-state-wrap').toggle(activeField === 'state');
-
-				shell.find('.formula-loc-city-wrap').toggle(activeField === 'city');
-
-				// Update has-data badges for ALL tabs regardless of visibility
-				var countryVal = shell.find('.formula-loc-country-input').val() || '';
-
-				var stateVal   = shell.find('.formula-loc-state-input').val() || '';
-
-				var cityVal    = shell.find('.formula-loc-location-input').val() || '';
-
-				tabs.filter('[data-target-field="country"]').toggleClass('has-data', countryVal !== '' && countryVal !== 'ALL');
-
-				tabs.filter('[data-target-field="state"]').toggleClass('has-data', stateVal !== '' && stateVal !== 'ALL');
-
-				tabs.filter('[data-target-field="city"]').toggleClass('has-data', cityVal !== '' && cityVal !== 'ALL');
-
-				// Set state disabled/enabled based on country value
-				var mainRow = shell.closest('tr.formula-location-row-main');
-
-				if (mainRow.length) {
-
-					updateLocStateVisibility(mainRow);
-
-				}
-
-			}
-
-			// Initialise all existing shells on page load
-			$(function() {
-
-				$('.formula-mini-target-shell-location').each(function() {
-
-					initLocationShell($(this));
-
-				});
-
-			});
-
-			// Also re-init after new rows are added (delegated via document)
-			$(document).on('formula:row:added', function() {
-
-				$('.formula-mini-target-shell-location').each(function() {
-
-					if (!$(this).data('formula-tab-init')) {
-
-						$(this).data('formula-tab-init', true);
-
-						initLocationShell($(this));
-
-					}
-
-				});
-
-			});
-
-							
-			// Global Location Target Tab Switcher
-			$(document.body).on('click', '.formula-mini-target-tab[data-target-field]', function(e) {
-				e.preventDefault();
-				var tab = $(this);
-				if (tab.hasClass('formula-state-disabled')) {
-					return;
-				}
-				var shell = tab.closest('.formula-mini-target-shell-location');
-				if (!shell.length) return;
-				var targetField = tab.data('target-field');
-
-				// Switch active tab pill
-				shell.find('.formula-mini-target-tab[data-target-field]').removeClass('is-active');
-				tab.addClass('is-active');
-
-				// Toggle active wrap div (CSS enforces display: block !important for .is-active)
-				shell.find('.formula-loc-country-wrap').toggleClass('is-active', targetField === 'country');
-				shell.find('.formula-loc-state-wrap').toggleClass('is-active', targetField === 'state');
-				shell.find('.formula-loc-city-wrap').toggleClass('is-active', targetField === 'city');
-
-				// Focus visible input
-				shell.find('.formula-loc-' + targetField + '-wrap input').trigger('focus');
-			});
-
 			function updateLocStateVisibility(mainRow) {
+				if (!mainRow || !mainRow.length) return;
+
 				var countryInput = mainRow.find('.formula-loc-country-input');
 				if (!countryInput.length) return;
 
@@ -14929,30 +14781,27 @@ if ( ! function_exists( 'formula_rate_shipping_inject_admin_css' ) ) {
 					stateCol.hide();
 					grid.attr('data-has-state', 'false');
 				}
-
-				updateFieldDataIndicators(mainRow);
 			}
 
-			function updateFieldDataIndicators(context) {
-				var shells = context ? $(context).find('.formula-mini-target-shell-location') : $('.formula-mini-target-shell-location');
-				shells.each(function() {
-					var shell = $(this);
-					var countryVal = (shell.find('.formula-loc-country-input').val() || '').trim();
-					var stateVal   = (shell.find('.formula-loc-state-input').val() || '').trim();
-					var cityVal    = (shell.find('.formula-loc-location-input').val() || '').trim();
-
-					shell.find('.formula-mini-target-tab[data-target-field="country"]').toggleClass('has-data', countryVal !== '' && countryVal !== 'ALL');
-					shell.find('.formula-mini-target-tab[data-target-field="state"]').toggleClass('has-data', stateVal !== '' && stateVal !== 'ALL');
-					shell.find('.formula-mini-target-tab[data-target-field="city"]').toggleClass('has-data', cityVal !== '' && cityVal !== 'ALL');
-				});
-			}
-
-			$(document.body).on('input change blur keyup', '.formula-loc-country-input, .formula-loc-state-input, .formula-loc-location-input', function() {
-				var mainRow = $(this).closest('tr.formula-location-row-main');
-				updateLocStateVisibility(mainRow);
+			$(document.body).on('input change blur keyup', '.formula-loc-country-input, .formula-chip-editor', function() {
+				var input = $(this);
+				var mainRow = input.closest('tr.formula-location-row-main');
+				if (!mainRow.length && input.hasClass('formula-chip-editor')) {
+					var sourceInput = getFormulaChipSourceInput(input);
+					mainRow = sourceInput.closest('tr.formula-location-row-main');
+				}
+				if (mainRow.length) {
+					updateLocStateVisibility(mainRow);
+				}
 			});
 
 			$(function() {
+				$('tr.formula-location-row-main').each(function() {
+					updateLocStateVisibility($(this));
+				});
+			});
+
+			$(document).on('formula:row:added', function() {
 				$('tr.formula-location-row-main').each(function() {
 					updateLocStateVisibility($(this));
 				});
