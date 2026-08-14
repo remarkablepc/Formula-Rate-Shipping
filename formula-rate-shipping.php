@@ -8,7 +8,7 @@
 
  * Description: Calculate dynamic shipping and handling rates using custom formulas, priority item rules (Categories, Tags & Attributes), location overrides, and an interactive real-time tester.
 
- * Version: 0.67.2
+ * Version: 0.67.3
 
  * Author:      RemarkablePC
 
@@ -4646,11 +4646,11 @@ function formula_rate_shipping_init() {
 									<input type="url" name="formula_shipping_custom_ical_url" id="formula_custom_ical_url" value="<?php echo esc_attr( get_option( 'formula_shipping_custom_ical_url', '' ) ); ?>" placeholder="https://calendar.google.com/calendar/ical/.../public/basic.ics" style="width: 100%; font-size: 12px; margin-bottom: 8px;" />
 									
 									<label style="font-size: 11px; font-weight: 600; color: #475569; display: block; margin-bottom: 4px;">Calendar Event Filter Mode</label>
-									<select name="formula_shipping_custom_ical_filter" id="formula_custom_ical_filter" style="width: 100%; max-width: 100%; box-sizing: border-box; height: 36px; padding: 6px 24px 6px 10px; font-size: 11px; border: 1px solid #cbd5e1; border-radius: 4px; background: #ffffff;">
-										<option value="all_events" <?php selected( get_option( 'formula_shipping_custom_ical_filter', 'all_events' ), 'all_events' ); ?>>Use All Calendar Events (All events count)</option>
-										<option value="prefix_holiday" <?php selected( get_option( 'formula_shipping_custom_ical_filter' ), 'prefix_holiday' ); ?>>Filter by 'Holiday:' Prefix (e.g. "Holiday: Festivus")</option>
+									<select name="formula_shipping_custom_ical_filter" id="formula_custom_ical_filter" style="width: 100%; max-width: 100%; box-sizing: border-box; height: 38px !important; line-height: 24px !important; padding: 6px 24px 6px 10px !important; font-size: 12px !important; border: 1px solid #cbd5e1; border-radius: 4px; background: #ffffff;">
+										<option value="all_events" <?php selected( get_option( 'formula_shipping_custom_ical_filter', 'all_events' ), 'all_events' ); ?>>Use All Calendar Events</option>
+										<option value="prefix_holiday" <?php selected( get_option( 'formula_shipping_custom_ical_filter' ), 'prefix_holiday' ); ?>>Filter by 'Holiday:' Prefix</option>
 									</select>
-									<p class="description" style="margin: 4px 0 0; font-size: 11px; color: #64748b; line-height: 1.4;">Paste your public Google Calendar, Apple iCloud, or Outlook iCal (.ics) URL. When using 'Holiday:' prefix mode, events titled <code>Holiday: Festivus</code>, <code>Holiday: First Contact Day</code> 🖖, or <code>Holiday: Star Wars Day</code> evaluate <code>[holiday]</code> cleanly to <code>Festivus</code>, <code>First Contact Day</code>, or <code>Star Wars Day</code>.</p>
+									<p class="description" style="margin: 4px 0 0; font-size: 11px; color: #64748b; line-height: 1.4;">Paste your public Google Calendar, Apple iCloud, or Outlook iCal (.ics) URL. <code>Use All Calendar Events</code> counts any event today. <code>Filter by 'Holiday:' Prefix</code> mode evaluates events titled <code>Holiday: Festivus</code>, <code>Holiday: First Contact Day</code> 🖖, or <code>Holiday: Star Wars Day</code> cleanly to <code>Festivus</code>, <code>First Contact Day</code>, or <code>Star Wars Day</code>.</p>
 								</div>
 							</div>
 
@@ -7640,7 +7640,7 @@ function buildLocFormulaRow(idx, ship, hand, isEnabled, bgClass) {
 
 												<label><?php esc_html_e( 'Country', 'formula-rate-shipping' ); ?></label>
 
-												<input type="text" id="formula_sim_country" class="formula-sim-country-input formula-multi-suggest-input" value="US" placeholder="US, CA, MX" title="<?php esc_attr_e( 'Country', 'formula-rate-shipping' ); ?>" />
+												<input type="text" id="formula_sim_country" class="formula-sim-country-input" value="US" placeholder="e.g. US, CA, MX" title="<?php esc_attr_e( 'Country', 'formula-rate-shipping' ); ?>" />
 
 											</div>
 
@@ -7648,7 +7648,7 @@ function buildLocFormulaRow(idx, ship, hand, isEnabled, bgClass) {
 
 												<label><?php esc_html_e( 'State or Province', 'formula-rate-shipping' ); ?></label>
 
-												<input type="text" id="formula_sim_state" class="formula-sim-state-input formula-multi-suggest-input" value="CA" placeholder="CA, ON, NY" title="<?php esc_attr_e( 'State or Province', 'formula-rate-shipping' ); ?>" />
+												<input type="text" id="formula_sim_state" class="formula-sim-state-input" value="CA" placeholder="e.g. CA, ON, NY" title="<?php esc_attr_e( 'State or Province', 'formula-rate-shipping' ); ?>" />
 
 											</div>
 
@@ -8451,31 +8451,47 @@ function buildLocFormulaRow(idx, ship, hand, isEnabled, bgClass) {
 								var countryMap = <?php echo wp_json_encode( function_exists( 'WC' ) && WC() && isset( WC()->countries ) && is_array( WC()->countries->countries ) ? WC()->countries->countries : array() ); ?>;
 
 								function normalizeCountryReference(value) {
-
-									var raw = String(value || '').trim();
-
+									var raw = String(value || '').trim().replace(/^['"]|['"]$/g, '');
 									if (!raw) return '';
-
 									var upper = raw.toUpperCase();
-
 									if (/^[A-Z]{2}$/.test(upper)) return upper;
 
+									var commonMap = {
+										'UNITED STATES': 'US',
+										'UNITED STATES OF AMERICA': 'US',
+										'USA': 'US',
+										'CANADA': 'CA',
+										'CAN': 'CA',
+										'UNITED KINGDOM': 'GB',
+										'GREAT BRITAIN': 'GB',
+										'UK': 'GB',
+										'MEXICO': 'MX',
+										'MEX': 'MX',
+										'GERMANY': 'DE',
+										'FRANCE': 'FR',
+										'AUSTRALIA': 'AU',
+										'AU': 'AU',
+										'ITALY': 'IT',
+										'SPAIN': 'ES',
+										'NEW ZEALAND': 'NZ',
+										'JAPAN': 'JP',
+										'CHINA': 'CN',
+										'BRAZIL': 'BR',
+										'INDIA': 'IN'
+									};
+
+									if (commonMap[upper]) return commonMap[upper];
+
+									var countryMap = <?php echo wp_json_encode( function_exists( 'WC' ) && WC() && isset( WC()->countries ) && is_array( WC()->countries->countries ) ? WC()->countries->countries : array() ); ?>;
 									var lower = raw.toLowerCase();
-
 									for (var code in countryMap) {
-
 										if (!Object.prototype.hasOwnProperty.call(countryMap, code)) continue;
-
-										if (String(countryMap[code] || '').trim().toLowerCase() === lower) {
-
+										var label = String(countryMap[code] || '').trim().toLowerCase();
+										if (label === lower || label.indexOf(lower + ' (') === 0) {
 											return String(code).toUpperCase();
-
 										}
-
 									}
-
 									return upper;
-
 								}
 
 								formula = formula.replace(/\[category\s*=\s*['"]([^'"]+)['"]\]/gi, function(match, targetVal) {
@@ -9328,49 +9344,50 @@ function buildLocFormulaRow(idx, ship, hand, isEnabled, bgClass) {
 
 
 								function normalizeCountryReferenceForLocation(value) {
-
-									var raw = String(value || '').trim();
-
-									if (!raw) {
-
-										return '';
-
-									}
-
+									var raw = String(value || '').trim().replace(/^['"]|['"]$/g, '');
+									if (!raw) return '';
 									var upper = raw.toUpperCase();
+									if (/^[A-Z]{2}$/.test(upper)) return upper;
 
-									if (/^[A-Z]{2}$/.test(upper)) {
+									var commonMap = {
+										'UNITED STATES': 'US',
+										'UNITED STATES OF AMERICA': 'US',
+										'USA': 'US',
+										'CANADA': 'CA',
+										'CAN': 'CA',
+										'UNITED KINGDOM': 'GB',
+										'GREAT BRITAIN': 'GB',
+										'UK': 'GB',
+										'MEXICO': 'MX',
+										'MEX': 'MX',
+										'GERMANY': 'DE',
+										'FRANCE': 'FR',
+										'AUSTRALIA': 'AU',
+										'AU': 'AU',
+										'ITALY': 'IT',
+										'SPAIN': 'ES',
+										'NEW ZEALAND': 'NZ',
+										'JAPAN': 'JP',
+										'CHINA': 'CN',
+										'BRAZIL': 'BR',
+										'INDIA': 'IN'
+									};
 
-										return upper;
-
-									}
+									if (commonMap[upper]) return commonMap[upper];
 
 									var countries = window.formulaCountrySuggestions || [];
-
 									var lower = raw.toLowerCase();
-
 									for (var i = 0; i < countries.length; i++) {
-
 										var country = countries[i] || {};
-
 										if (String(country.value || '').toLowerCase() === lower) {
-
 											return String(country.value || '').toUpperCase();
-
 										}
-
 										var label = String(country.label || '').toLowerCase();
-
 										if (label === lower || label.indexOf(lower + ' (') === 0) {
-
 											return String(country.value || '').toUpperCase();
-
 										}
-
 									}
-
 									return upper;
-
 								}
 
 
