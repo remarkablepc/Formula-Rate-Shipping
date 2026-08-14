@@ -8,7 +8,7 @@
 
  * Description: Calculate dynamic shipping and handling rates using custom formulas, priority item rules (Categories, Tags & Attributes), location overrides, and an interactive real-time tester.
 
- * Version: 0.62.0
+ * Version: 0.64.0
 
  * Author:      RemarkablePC
 
@@ -5359,20 +5359,25 @@ function formula_rate_shipping_init() {
 												<td class="formula-location-target-cell">
 													<div class="loc-geo-fields" style="display: <?php echo esc_attr( $geo_display ); ?>;">
 														<div class="formula-mini-target-shell formula-mini-target-shell-location">
-															<div class="formula-mini-target-tabs">
-																<span class="formula-mini-target-tab formula-mini-target-tab-country is-active" data-target-field="country"><?php esc_html_e( 'Country', 'formula-rate-shipping' ); ?></span>
-																<span class="formula-mini-target-tab formula-mini-target-tab-state" data-target-field="state"><?php esc_html_e( 'State', 'formula-rate-shipping' ); ?></span>
-																<span class="formula-mini-target-tab formula-mini-target-tab-city" data-target-field="city"><?php esc_html_e( 'City / ZIP / Pattern', 'formula-rate-shipping' ); ?></span>
-															</div>
-															<div class="formula-location-inline-fields formula-mini-target-grid formula-mini-target-grid-location">
-																<div class="formula-loc-country-wrap is-active">
-																	<input type="text" name="<?php echo esc_attr( $field_key ); ?>[<?php echo $index; ?>][country]" class="formula-loc-country-input formula-multi-suggest-input" value="<?php echo esc_attr( $country ); ?>" title="<?php esc_attr_e( 'Country', 'formula-rate-shipping' ); ?>" placeholder="US, CA, MX or ALL" />
+															<?php $is_single_country = ( preg_match( '/^[A-Z]{2}$/i', trim( $country ) ) && strtoupper( trim( $country ) ) !== 'ALL' ); ?>
+															<div class="formula-location-inline-fields formula-mini-target-grid formula-mini-target-grid-location" data-has-state="<?php echo $is_single_country ? 'true' : 'false'; ?>">
+																<div class="formula-loc-col formula-loc-col-country">
+																	<label class="formula-loc-col-label"><?php esc_html_e( 'Country', 'formula-rate-shipping' ); ?></label>
+																	<div class="formula-loc-country-wrap is-active">
+																		<input type="text" name="<?php echo esc_attr( $field_key ); ?>[<?php echo $index; ?>][country]" class="formula-loc-country-input formula-multi-suggest-input" value="<?php echo esc_attr( $country ); ?>" title="<?php esc_attr_e( 'Country', 'formula-rate-shipping' ); ?>" placeholder="US, CA, MX or ALL" />
+																	</div>
 																</div>
-																<div class="formula-loc-state-wrap">
-																	<input type="text" name="<?php echo esc_attr( $field_key ); ?>[<?php echo $index; ?>][state]" class="formula-loc-state-input formula-multi-suggest-input" value="<?php echo esc_attr( $state ); ?>" title="<?php esc_attr_e( 'State', 'formula-rate-shipping' ); ?>" placeholder="<?php echo ( preg_match( '/^[A-Z]{2}$/i', trim( $country ) ) && strtoupper( trim( $country ) ) !== 'ALL' ) ? esc_attr__( 'e.g. CA, NY, TX or ALL', 'formula-rate-shipping' ) : esc_attr__( 'To Set State or Province Only One Country Must Be Selected', 'formula-rate-shipping' ); ?>" <?php echo ( preg_match( '/^[A-Z]{2}$/i', trim( $country ) ) && strtoupper( trim( $country ) ) !== 'ALL' ) ? '' : 'disabled'; ?> />
+																<div class="formula-loc-col formula-loc-col-state" style="display: <?php echo $is_single_country ? 'block' : 'none'; ?>;">
+																	<label class="formula-loc-col-label"><?php esc_html_e( 'State', 'formula-rate-shipping' ); ?></label>
+																	<div class="formula-loc-state-wrap is-active">
+																		<input type="text" name="<?php echo esc_attr( $field_key ); ?>[<?php echo $index; ?>][state]" class="formula-loc-state-input formula-multi-suggest-input" value="<?php echo esc_attr( $state ); ?>" title="<?php esc_attr_e( 'State', 'formula-rate-shipping' ); ?>" placeholder="e.g. CA, NY, TX or ALL" <?php echo $is_single_country ? '' : 'disabled'; ?> />
+																	</div>
 																</div>
-																<div class="formula-loc-city-wrap">
-																	<input type="text" name="<?php echo esc_attr( $field_key ); ?>[<?php echo $index; ?>][location]" class="formula-loc-location-input" value="<?php echo esc_attr( $location ); ?>" title="<?php esc_attr_e( 'City / ZIP / Pattern', 'formula-rate-shipping' ); ?>" placeholder="City, ZIP or pattern" />
+																<div class="formula-loc-col formula-loc-col-city">
+																	<label class="formula-loc-col-label"><?php esc_html_e( 'City / ZIP / Pattern', 'formula-rate-shipping' ); ?></label>
+																	<div class="formula-loc-city-wrap is-active">
+																		<input type="text" name="<?php echo esc_attr( $field_key ); ?>[<?php echo $index; ?>][location]" class="formula-loc-location-input" value="<?php echo esc_attr( $location ); ?>" title="<?php esc_attr_e( 'City / ZIP / Pattern', 'formula-rate-shipping' ); ?>" placeholder="City, ZIP or pattern" />
+																	</div>
 																</div>
 															</div>
 														</div>
@@ -5873,15 +5878,19 @@ function formula_rate_shipping_init() {
 		'<td class="formula-location-target-cell">' +
 			'<div class="loc-geo-fields" style="display:' + geoDisplay + ';">' +
 				'<div class="formula-mini-target-shell formula-mini-target-shell-location">' +
-					'<div class="formula-mini-target-tabs">' +
-						'<span class="formula-mini-target-tab formula-mini-target-tab-country is-active" data-target-field="country"><?php echo esc_js( __( 'Country', 'formula-rate-shipping' ) ); ?></span>' +
-						'<span class="formula-mini-target-tab formula-mini-target-tab-state" data-target-field="state"><?php echo esc_js( __( 'State', 'formula-rate-shipping' ) ); ?></span>' +
-						'<span class="formula-mini-target-tab formula-mini-target-tab-city" data-target-field="city"><?php echo esc_js( __( 'City / ZIP / Pattern', 'formula-rate-shipping' ) ); ?></span>' +
-					'</div>' +
-					'<div class="formula-location-inline-fields formula-mini-target-grid formula-mini-target-grid-location">' +
-						'<div class="formula-loc-country-wrap is-active"><input type="text" name="' + fieldKey + '[' + idx + '][country]" class="formula-loc-country-input formula-multi-suggest-input" value="' + $('<div>').text(country).html() + '" title="<?php echo esc_js( __( 'Country', 'formula-rate-shipping' ) ); ?>" placeholder="US, CA, MX or ALL" /></div>' +
-						'<div class="formula-loc-state-wrap"><input type="text" name="' + fieldKey + '[' + idx + '][state]" class="formula-loc-state-input formula-multi-suggest-input" value="' + $('<div>').text(state).html() + '" title="<?php echo esc_js( __( 'State', 'formula-rate-shipping' ) ); ?>" placeholder="To Set State or Province Only One Country Must Be Selected" /></div>' +
-						'<div class="formula-loc-city-wrap"><input type="text" name="' + fieldKey + '[' + idx + '][location]" class="formula-loc-location-input" value="' + $('<div>').text(locPat).html() + '" title="<?php echo esc_js( __( 'City / ZIP / Pattern', 'formula-rate-shipping' ) ); ?>" placeholder="<?php echo esc_js( __( 'City, ZIP or pattern', 'formula-rate-shipping' ) ); ?>" /></div>' +
+					'<div class="formula-location-inline-fields formula-mini-target-grid formula-mini-target-grid-location" data-has-state="' + (isSingleCountry ? 'true' : 'false') + '">' +
+						'<div class="formula-loc-col formula-loc-col-country">' +
+							'<label class="formula-loc-col-label"><?php echo esc_js( __( 'Country', 'formula-rate-shipping' ) ); ?></label>' +
+							'<div class="formula-loc-country-wrap is-active"><input type="text" name="' + fieldKey + '[' + idx + '][country]" class="formula-loc-country-input formula-multi-suggest-input" value="' + $('<div>').text(country).html() + '" title="<?php echo esc_js( __( 'Country', 'formula-rate-shipping' ) ); ?>" placeholder="US, CA, MX or ALL" /></div>' +
+						'</div>' +
+						'<div class="formula-loc-col formula-loc-col-state" style="display:' + (isSingleCountry ? 'block' : 'none') + ';">' +
+							'<label class="formula-loc-col-label"><?php echo esc_js( __( 'State', 'formula-rate-shipping' ) ); ?></label>' +
+							'<div class="formula-loc-state-wrap is-active"><input type="text" name="' + fieldKey + '[' + idx + '][state]" class="formula-loc-state-input formula-multi-suggest-input" value="' + $('<div>').text(state).html() + '" title="<?php echo esc_js( __( 'State', 'formula-rate-shipping' ) ); ?>" placeholder="e.g. CA, NY, TX or ALL"' + (isSingleCountry ? '' : ' disabled') + ' /></div>' +
+						'</div>' +
+						'<div class="formula-loc-col formula-loc-col-city">' +
+							'<label class="formula-loc-col-label"><?php echo esc_js( __( 'City / ZIP / Pattern', 'formula-rate-shipping' ) ); ?></label>' +
+							'<div class="formula-loc-city-wrap is-active"><input type="text" name="' + fieldKey + '[' + idx + '][location]" class="formula-loc-location-input" value="' + $('<div>').text(locPat).html() + '" title="<?php echo esc_js( __( 'City / ZIP / Pattern', 'formula-rate-shipping' ) ); ?>" placeholder="<?php echo esc_js( __( 'City, ZIP or pattern', 'formula-rate-shipping' ) ); ?>" /></div>' +
+						'</div>' +
 					'</div>' +
 				'</div>' +
 			'</div>' +
@@ -12995,13 +13004,6 @@ select[name*="[type]"] {
 .formula-loc-city-wrap {
 	width: 100% !important;
 	box-sizing: border-box !important;
-	display: none !important; /* Hide ALL wraps by default */
-}
-
-/* ONLY the .is-active wrap displays */
-.formula-loc-country-wrap.is-active,
-.formula-loc-state-wrap.is-active,
-.formula-loc-city-wrap.is-active {
 	display: block !important;
 }
 
@@ -13604,25 +13606,35 @@ if ( ! function_exists( 'formula_rate_shipping_inject_admin_css' ) ) {
 		}
 
 		.formula-mini-target-grid {
-
 			display: grid !important;
+			gap: 10px !important;
+			align-items: end !important;
+			width: 100% !important;
+		}
 
-			gap: 8px !important;
+		.formula-loc-col {
+			display: flex !important;
+			flex-direction: column !important;
+			min-width: 0 !important;
+			width: 100% !important;
+		}
 
-			align-items: center !important;
-
+		.formula-loc-col-label {
+			display: block !important;
+			font-size: 11px !important;
+			font-weight: 600 !important;
+			color: #475569 !important;
+			margin-bottom: 4px !important;
+			line-height: 1.2 !important;
+			white-space: nowrap !important;
 		}
 
 		.formula-mini-target-grid-location {
-
-			grid-template-columns: 1fr 1fr !important;
-
+			grid-template-columns: 1.2fr 1fr !important;
 		}
 
 		.formula-mini-target-grid-location[data-has-state="true"] {
-
-			grid-template-columns: minmax(150px, 1fr) minmax(120px, 0.7fr) minmax(180px, 1fr) !important;
-
+			grid-template-columns: minmax(130px, 150px) minmax(130px, 160px) 1fr !important;
 		}
 
 		.formula-mini-target-grid-environment {
@@ -14904,15 +14916,18 @@ if ( ! function_exists( 'formula_rate_shipping_inject_admin_css' ) ) {
 
 				var countryVal = (countryInput.val() || '').trim().toUpperCase();
 				var stateInput = mainRow.find('.formula-loc-state-input');
-				var stateTab = mainRow.find('.formula-mini-target-tab[data-target-field="state"]');
+				var stateCol   = mainRow.find('.formula-loc-col-state');
+				var grid       = mainRow.find('.formula-mini-target-grid-location');
 				var isSingleCountry = /^[A-Z]{2}$/.test(countryVal) && countryVal !== 'ALL';
 
 				if (isSingleCountry) {
 					stateInput.prop('disabled', false).attr('placeholder', 'e.g. CA, NY, TX or ALL');
-					stateTab.removeClass('formula-state-disabled');
+					stateCol.show();
+					grid.attr('data-has-state', 'true');
 				} else {
 					stateInput.prop('disabled', true).attr('placeholder', 'To Set State or Province Only One Country Must Be Selected');
-					stateTab.addClass('formula-state-disabled');
+					stateCol.hide();
+					grid.attr('data-has-state', 'false');
 				}
 
 				updateFieldDataIndicators(mainRow);
@@ -16609,7 +16624,7 @@ if ( ! function_exists( 'formula_shipping_export_handler' ) ) {
 
 			'plugin'    => 'formula-rate-shipping',
 
-			'version'   => '0.62.0',
+			'version'   => '0.64.0',
 
 			'exported'  => current_time( 'Y-m-d H:i:s' ),
 
