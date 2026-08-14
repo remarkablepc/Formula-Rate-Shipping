@@ -8,7 +8,7 @@
 
  * Description: Calculate dynamic shipping and handling rates using custom formulas, priority item rules (Categories, Tags & Attributes), location overrides, and an interactive real-time tester.
 
- * Version: 0.68.0
+ * Version: 0.68.1
 
  * Author:      RemarkablePC
 
@@ -7757,17 +7757,17 @@ function buildLocFormulaRow(idx, ship, hand, isEnabled, bgClass) {
 
 
 
-										<!-- Intuitive Product Selector Filter Bar (Clean Stacked Layout) -->
+										<!-- Intuitive Product Selector Filter Bar (1-Row Responsive Toolbar) -->
 
-										<div style="margin-bottom: 14px; background: #f8fafc; padding: 14px 16px; border: 1px solid #cbd5e1; border-radius: 8px;">
+										<div style="margin-bottom: 14px; background: #f8fafc; padding: 12px 14px; border: 1px solid #cbd5e1; border-radius: 8px;">
 
-											<div style="display: flex; gap: 10px; margin-bottom: 10px; flex-wrap: wrap;">
+											<div style="display: grid; grid-template-columns: 140px 140px 1fr auto; gap: 10px; align-items: end;">
 
-												<div style="flex: 1; min-width: 130px;">
+												<div>
 
 													<label style="font-weight: 600; font-size: 11px; color: #475569; display: block; margin-bottom: 4px;"><?php esc_html_e( 'Filter Category:', 'formula-rate-shipping' ); ?></label>
 
-													<select id="formula_sim_filter_cat" style="width:100%; height:34px; font-size:12px;">
+													<select id="formula_sim_filter_cat" style="width:100%; height:36px; font-size:12px;">
 
 														<option value=""><?php esc_html_e( '-- All Categories --', 'formula-rate-shipping' ); ?></option>
 
@@ -7781,11 +7781,11 @@ function buildLocFormulaRow(idx, ship, hand, isEnabled, bgClass) {
 
 												</div>
 
-												<div style="flex: 1; min-width: 130px;">
+												<div>
 
 													<label style="font-weight: 600; font-size: 11px; color: #475569; display: block; margin-bottom: 4px;"><?php esc_html_e( 'Filter Tag:', 'formula-rate-shipping' ); ?></label>
 
-													<select id="formula_sim_filter_tag" style="width:100%; height:34px; font-size:12px;">
+													<select id="formula_sim_filter_tag" style="width:100%; height:36px; font-size:12px;">
 
 														<option value=""><?php esc_html_e( '-- All Tags --', 'formula-rate-shipping' ); ?></option>
 
@@ -7799,27 +7799,23 @@ function buildLocFormulaRow(idx, ship, hand, isEnabled, bgClass) {
 
 												</div>
 
-											</div>
+												<div>
 
+													<label style="font-weight: 600; font-size: 11px; color: #475569; display: block; margin-bottom: 4px;"><?php esc_html_e( 'Select Catalog Product:', 'formula-rate-shipping' ); ?></label>
 
+													<select id="formula_sim_select_store_product" style="width: 100%; height: 36px; font-size: 12px; border-color: #0284c7;">
 
-											<div style="margin-bottom: 10px;">
+														<option value=""><?php esc_html_e( '-- Choose product from catalog --', 'formula-rate-shipping' ); ?></option>
 
-												<label style="font-weight: 600; font-size: 11px; color: #475569; display: block; margin-bottom: 4px;"><?php esc_html_e( 'Select Catalog Product:', 'formula-rate-shipping' ); ?></label>
+													</select>
 
-												<select id="formula_sim_select_store_product" style="width: 100%; height: 38px; font-size: 12px; border-color: #0284c7;">
+												</div>
 
-													<option value=""><?php esc_html_e( '-- Choose product from catalog --', 'formula-rate-shipping' ); ?></option>
+												<div>
 
-												</select>
+													<button type="button" class="button button-primary" id="formula_sim_add_selected_product_btn" style="height: 36px; font-size: 12px; font-weight: 600; white-space: nowrap;"><?php esc_html_e( '+ Add to Test Cart', 'formula-rate-shipping' ); ?></button>
 
-											</div>
-
-
-
-											<div>
-
-												<button type="button" class="button button-primary" id="formula_sim_add_selected_product_btn" style="width: 100%; height: 38px; font-size: 13px; font-weight: 600; display: flex; align-items: center; justify-content: center; gap: 6px;"><?php esc_html_e( '+ Add Selected Product to Test Cart', 'formula-rate-shipping' ); ?></button>
+												</div>
 
 											</div>
 
@@ -11152,167 +11148,95 @@ function buildLocFormulaRow(idx, ship, hand, isEnabled, bgClass) {
 
 
 
-								<h4 style="margin: 0 0 10px 0; font-size: 15px; color: #1e293b; font-weight: 700; border-bottom: 1px solid #e2e8f0; padding-bottom: 8px;">📦 Cart, Item & Dimensional Placeholders</h4>
-
-								<ul style="margin: 0 0 18px 0; padding-left: 20px;">
-
-									<li><code>[qty]</code> – Total quantity of matching items in the cart.</li>
-
-									<li><code>[cost]</code> – Total price of matching items in the cart.</li>
-
-									<li><code>[weight]</code> – Total weight of matching items in the cart.</li>
-
-									<li><code>[items]</code> – Number of unique line items in the cart.</li>
-
-									<li><code>[volume]</code> – Total cubic volume (length × width × height) of matching items.</li>
-
-									<li><code>[length]</code> <code>[width]</code> <code>[height]</code> – Maximum single dimension among items in the cart.</li>
-
-									<li><code>[on_sale]</code> – Returns <code>1</code> if any item in the cart is on sale, <code>0</code> otherwise.</li>
-
-								</ul>
-
-
-
-								<h4 style="margin: 0 0 10px 0; font-size: 15px; color: #1e293b; font-weight: 700; border-bottom: 1px solid #e2e8f0; padding-bottom: 8px;">🏷️ Filtered Placeholders (Category / Tag / Variation / Product)</h4>
-
-								<p style="margin: 0 0 8px 0;">All base variables support category, tag, variation, and product name filters:</p>
-
-								<ul style="margin: 0 0 18px 0; padding-left: 20px;">
-
-									<li><code>[qty category="X"]</code> <code>[qty tag="X"]</code> <code>[qty variation="X"]</code></li>
-
-									<li><code>[cost category="X"]</code> <code>[cost tag="X"]</code> <code>[cost variation="X"]</code></li>
-
-									<li><code>[weight category="X"]</code> <code>[weight tag="X"]</code> <code>[weight variation="X"]</code></li>
-
-									<li><code>[items category="X"]</code> <code>[items tag="X"]</code> <code>[items variation="X"]</code></li>
-
-									<li><code>[product="My Book"]</code> – Returns <code>1</code> if any cart item's name, SKU, or product/variation ID matches "My Book", <code>0</code> otherwise.</li>
-
-									<li><code>[on_sale category="books"]</code> <code>[on_sale tag="clearance"]</code> – Checks if matching category/tag items are on sale.</li>
-
-								</ul>
-
-
-
-								<h4 style="margin: 0 0 10px 0; font-size: 15px; color: #1e293b; font-weight: 700; border-bottom: 1px solid #e2e8f0; padding-bottom: 8px;">👤 User Role & Identity Variables</h4>
-
-								<p style="margin: 0 0 8px 0;"><code>[user="X"]</code> checks the currently logged-in user and returns <code>1</code> (true) or <code>0</code> (false). It matches in this order:</p>
-
-								<ol style="margin: 0 0 8px 0; padding-left: 20px;">
-
-									<li><strong>User Role</strong> – e.g. <code>subscriber</code>, <code>customer</code>, <code>administrator</code>, <code>editor</code>, <code>shop_manager</code></li>
-
-									<li><strong>User Email</strong> – e.g. <code>admin@example.com</code></li>
-
-									<li><strong>User Login</strong> – e.g. <code>johndoe</code></li>
-
-								</ol>
-
-								<p style="margin: 0 0 8px 0;"><code>[user_role]</code> returns the primary user role as text (or <code>guest</code> for logged-out users).</p>
-
-								<p style="margin: 0 0 18px 0; background: #fef3c7; border: 1px solid #fcd34d; border-radius: 6px; padding: 8px 12px; font-size: 12px; color: #92400e;"><strong>Note:</strong> For logged-out (guest) users, <code>[user="X"]</code> always returns <code>0</code>. Use <code>[user_role]</code> to detect guests.</p>
-
-
-
-								<h4 style="margin: 0 0 10px 0; font-size: 15px; color: #1e293b; font-weight: 700; border-bottom: 1px solid #e2e8f0; padding-bottom: 8px;">📱 Device, OS & Browser Environment Matching</h4>
-
-								<ul style="margin: 0 0 12px 0; padding-left: 20px;">
-
-									<li><code>[os]</code> – Operating system (e.g. <code>Windows 11</code>, <code>Windows 10</code>, <code>MacOS Ventura</code>, <code>Linux Mint</code>, <code>Ubuntu</code>, <code>iOS 17</code>, <code>Android 14</code>).</li>
-
-									<li><code>[browser]</code> – Browser name (e.g. <code>Chrome</code>, <code>Firefox</code>, <code>Safari</code>, <code>Edge</code>, <code>Opera</code>, <code>Brave</code>, <code>Floorp</code>, <code>Waterfox</code>, <code>Vivaldi</code>, <code>Arc</code>).</li>
-
-									<li><code>[device]</code> – Device type (e.g. <code>mobile</code>, <code>desktop</code>, <code>tablet</code>).</li>
-
-									<li><code>[is_mobile]</code> – Returns <code>1</code> for mobile/tablet devices, <code>0</code> for desktop.</li>
-
-								</ul>
-
-								<p style="margin: 0 0 8px 0; font-weight: 600; color: #0f172a;">🖥️ Automatic OS & Version Simplification Aliases:</p>
-								<ul style="margin: 0 0 12px 0; padding-left: 20px; font-size: 12px; color: #475569;">
-									<li><strong>Windows:</strong> <code>Win11</code>, <code>Win 11</code>, <code>Windows 11</code>, <code>Win10</code>, <code>Win 10</code>, <code>Windows 10</code>, <code>Win 7</code>, <code>WinXP</code>, <code>Vista</code></li>
-									<li><strong>MacOS:</strong> <code>Ventura</code>, <code>Sonoma</code>, <code>Sequoia</code>, <code>Monterey</code>, <code>Big Sur</code>, <code>Catalina</code>, <code>OSX</code>, <code>MacOS</code></li>
-									<li><strong>Linux Distros:</strong> <code>Linux Mint</code>, <code>Ubuntu</code>, <code>Fedora</code>, <code>Arch</code>, <code>Pop!_OS</code>, <code>Debian</code>, <code>Manjaro</code></li>
-									<li><strong>Niche Browsers:</strong> <code>Floorp</code>, <code>Waterfox</code>, <code>LibreWolf</code>, <code>Arc</code>, <code>Brave</code>, <code>Vivaldi</code></li>
-								</ul>
-
-								<p style="margin: 0 0 18px 0; background: #e0f2fe; border: 1px solid #7dd3fc; border-radius: 6px; padding: 8px 12px; font-size: 12px; color: #0369a1;"><strong>OS Simplifier Tip:</strong> You can enter full versioned names like <code>Win 11</code> or <code>Ventura</code> or generic names like <code>Windows</code> or <code>Linux</code>. Wildcards (e.g. <code>Win*</code>, <code>MacOS*</code>) are also supported.</p>
-
-
-
-								<h4 style="margin: 0 0 10px 0; font-size: 15px; color: #1e293b; font-weight: 700; border-bottom: 1px solid #e2e8f0; padding-bottom: 8px;">🔍 Wildcard Matching (* and ?)</h4>
-
-								<p style="margin: 0 0 8px 0;">Location and User rule target fields, as well as Product text filters (category, tag, variation, SKU, title), support shell-style wildcard patterns:</p>
-
-								<ul style="margin: 0 0 8px 0; padding-left: 20px;">
-
-									<li><code>*</code> – Matches <strong>any sequence</strong> of characters (including none). E.g. <code>US*</code> matches <code>US</code>, <code>USA</code>, <code>USVI</code>.</li>
-
-									<li><code>?</code> – Matches <strong>exactly one</strong> character. E.g. <code>NY?</code> matches <code>NYS</code>, <code>NYC</code> but not <code>NY</code>.</li>
-
-								</ul>
-
-								<ul style="margin: 0 0 18px 0; padding-left: 20px;">
-
-									<li><strong>Country / State / City-ZIP:</strong> <code>US*</code>, <code>CA</code>, <code>1?002</code></li>
-
-									<li><strong>User Email:</strong> <code>*@company.com</code>, <code>admin*@*.org</code></li>
-
-									<li><strong>User Login / Role:</strong> <code>john*</code>, <code>shop_*</code></li>
-
-									<li><strong>Product Category / Tag:</strong> <code>Ship*</code>, <code>*digital*</code></li>
-
-									<li><strong>SKU / Title / Variation:</strong> <code>PROD-*</code>, <code>*-large</code>, <code>Size: ?L</code></li>
-
-									<li><strong>Meta Value:</strong> <code>gold*</code>, <code>tier_?</code></li>
-
-								</ul>
-
-								<p style="margin: 0 0 18px 0; background: #f0fdf4; border: 1px solid #86efac; border-radius: 6px; padding: 8px 12px; font-size: 12px; color: #14532d;"><strong>Tip:</strong> Wildcards are case-insensitive. When no wildcard characters are present the rule performs a standard exact match, so existing rules are unaffected.</p>
-
-
-
-								<h4 style="margin: 0 0 10px 0; font-size: 15px; color: #1e293b; font-weight: 700; border-bottom: 1px solid #e2e8f0; padding-bottom: 8px;">⏰ Time & Temporal Variables</h4>
-
-								<ul style="margin: 0 0 18px 0; padding-left: 20px;">
-
-									<li><code>[hour]</code> – Current hour of the day (0 to 23). E.g. <code>if([hour] >= 14, 15.00, 7.50)</code> for 2 PM cutoff.</li>
-
-									<li><code>[day]</code> – Day of the week name (e.g. <code>Monday</code>, <code>Friday</code>, <code>Sunday</code>).</li>
-
-									<li><code>[month]</code> – Month number (1 to 12).</li>
-
-									<li><code>[is_weekend]</code> – Returns <code>1</code> on Saturday/Sunday, <code>0</code> on weekdays.</li>
-
-								</ul>
-
-
-
-								<h4 style="margin: 0 0 10px 0; font-size: 15px; color: #1e293b; font-weight: 700; border-bottom: 1px solid #e2e8f0; padding-bottom: 8px;">🎄 Holidays, Date Ranges & Checkout Notices</h4>
-
-								<ul style="margin: 0 0 18px 0; padding-left: 20px;">
-
-									<li><code>[is_holiday]</code> – Returns <code>1</code> on any public holiday or peak shopping event (Black Friday, Christmas, New Year, July 4th, etc.), <code>0</code> otherwise.</li>
-
-									<li><code>[is_holiday="Christmas"]</code> – Returns <code>1</code> if today is Christmas, <code>0</code> otherwise.</li>
-
-									<li><code>[is_holiday country="CA"]</code> – Checks public holidays in a specific country (e.g. Canada).</li>
-
-									<li><code>[holiday]</code> – Returns the name of the active holiday as text (e.g. <code>Christmas</code>, <code>Black Friday</code>).</li>
-
-									<li><code>[is_date="07-15"]</code> – Returns <code>1</code> if today is July 15th (store anniversary), <code>0</code> otherwise.</li>
-
-									<li><code>[is_date_range="11-25 to 11-30"]</code> – Returns <code>1</code> if today is within the specified date range.</li>
-
-									<li><code>[notice="Custom Text"]</code> / <code>[message="Custom Text"]</code> – Displays a message beneath the applicable shipping rate in the classic cart and checkout.</li>
-
-								</ul>
-
-
-
+								<!-- Accordion 1: Cart, Item & Dimensional Placeholders -->
 								<details class="formula-help-accordion" style="margin-bottom: 12px; background: #ffffff; border: 1px solid #cbd5e1; border-radius: 8px; overflow: hidden;" open>
+									<summary style="padding: 12px 16px; font-weight: 700; font-size: 14px; color: #0f172a; background: #f8fafc; cursor: pointer; user-select: none;">📦 Cart, Item & Dimensional Placeholders</summary>
+									<div style="padding: 16px; border-top: 1px solid #e2e8f0;">
+										<ul style="margin: 0; padding-left: 20px;">
+											<li><code>[qty]</code> – Total quantity of matching items in the cart.</li>
+											<li><code>[cost]</code> – Total price of matching items in the cart.</li>
+											<li><code>[weight]</code> – Total weight of matching items in the cart.</li>
+											<li><code>[items]</code> – Number of unique line items in the cart.</li>
+											<li><code>[volume]</code> – Total cubic volume (length × width × height) of matching items.</li>
+											<li><code>[length]</code> <code>[width]</code> <code>[height]</code> – Maximum single dimension among items in the cart.</li>
+											<li><code>[on_sale]</code> – Returns <code>1</code> if any item in the cart is on sale, <code>0</code> otherwise.</li>
+										</ul>
+									</div>
+								</details>
+
+								<!-- Accordion 2: Filtered Placeholders -->
+								<details class="formula-help-accordion" style="margin-bottom: 12px; background: #ffffff; border: 1px solid #cbd5e1; border-radius: 8px; overflow: hidden;">
+									<summary style="padding: 12px 16px; font-weight: 700; font-size: 14px; color: #0f172a; background: #f8fafc; cursor: pointer; user-select: none;">🏷️ Filtered Placeholders (Category / Tag / Variation / Product)</summary>
+									<div style="padding: 16px; border-top: 1px solid #e2e8f0;">
+										<p style="margin: 0 0 8px 0;">All base variables support category, tag, variation, and product name filters:</p>
+										<ul style="margin: 0; padding-left: 20px;">
+											<li><code>[qty category="X"]</code> <code>[qty tag="X"]</code> <code>[qty variation="X"]</code></li>
+											<li><code>[cost category="X"]</code> <code>[cost tag="X"]</code> <code>[cost variation="X"]</code></li>
+											<li><code>[weight category="X"]</code> <code>[weight tag="X"]</code> <code>[weight variation="X"]</code></li>
+											<li><code>[items category="X"]</code> <code>[items tag="X"]</code> <code>[items variation="X"]</code></li>
+											<li><code>[product="My Book"]</code> – Returns <code>1</code> if any cart item's name, SKU, or product/variation ID matches "My Book", <code>0</code> otherwise.</li>
+											<li><code>[on_sale category="books"]</code> <code>[on_sale tag="clearance"]</code> – Checks if matching category/tag items are on sale.</li>
+										</ul>
+									</div>
+								</details>
+
+								<!-- Accordion 3: User Role & Identity Variables -->
+								<details class="formula-help-accordion" style="margin-bottom: 12px; background: #ffffff; border: 1px solid #cbd5e1; border-radius: 8px; overflow: hidden;">
+									<summary style="padding: 12px 16px; font-weight: 700; font-size: 14px; color: #0f172a; background: #f8fafc; cursor: pointer; user-select: none;">👤 User Role, Email & Metadata Variables</summary>
+									<div style="padding: 16px; border-top: 1px solid #e2e8f0;">
+										<p style="margin: 0 0 8px 0;"><code>[user="X"]</code> checks the currently logged-in user and returns <code>1</code> (true) or <code>0</code> (false). It matches in this order:</p>
+										<ol style="margin: 0 0 8px 0; padding-left: 20px;">
+											<li><strong>User Role</strong> – e.g. <code>subscriber</code>, <code>customer</code>, <code>administrator</code>, <code>editor</code>, <code>shop_manager</code></li>
+											<li><strong>User Email</strong> – e.g. <code>admin@example.com</code></li>
+											<li><strong>User Login</strong> – e.g. <code>johndoe</code></li>
+										</ol>
+										<p style="margin: 0 0 8px 0;"><code>[user_role]</code> returns the primary user role as text (or <code>guest</code> for logged-out users).</p>
+										<p style="margin: 0; background: #fef3c7; border: 1px solid #fcd34d; border-radius: 6px; padding: 8px 12px; font-size: 12px; color: #92400e;"><strong>Note:</strong> For logged-out (guest) users, <code>[user="X"]</code> always returns <code>0</code>. Use <code>[user_role]</code> to detect guests.</p>
+									</div>
+								</details>
+
+								<!-- Accordion 4: Device, OS & Browser Environment Matching -->
+								<details class="formula-help-accordion" style="margin-bottom: 12px; background: #ffffff; border: 1px solid #cbd5e1; border-radius: 8px; overflow: hidden;">
+									<summary style="padding: 12px 16px; font-weight: 700; font-size: 14px; color: #0f172a; background: #f8fafc; cursor: pointer; user-select: none;">📱 Device, OS & Browser Environment Matching</summary>
+									<div style="padding: 16px; border-top: 1px solid #e2e8f0;">
+										<ul style="margin: 0 0 12px 0; padding-left: 20px;">
+											<li><code>[os]</code> – Operating system (e.g. <code>Windows 11</code>, <code>MacOS Ventura</code>, <code>Linux Mint</code>, <code>iOS 17</code>, <code>Android 14</code>).</li>
+											<li><code>[browser]</code> – Browser name (e.g. <code>Chrome</code>, <code>Firefox</code>, <code>Safari</code>, <code>Edge</code>, <code>Opera</code>, <code>Brave</code>, <code>Floorp</code>, <code>Waterfox</code>, <code>Vivaldi</code>, <code>Arc</code>).</li>
+											<li><code>[device]</code> – Device type (e.g. <code>mobile</code>, <code>desktop</code>, <code>tablet</code>).</li>
+											<li><code>[is_mobile]</code> – Returns <code>1</code> for mobile/tablet devices, <code>0</code> for desktop.</li>
+										</ul>
+										<p style="margin: 0 0 8px 0; font-weight: 600; color: #0f172a;">🖥️ Automatic OS & Version Simplification Aliases:</p>
+										<ul style="margin: 0 0 12px 0; padding-left: 20px; font-size: 12px; color: #475569;">
+											<li><strong>Windows:</strong> <code>Win11</code>, <code>Win 11</code>, <code>Windows 11</code>, <code>Win10</code>, <code>Win 10</code>, <code>Windows 10</code>, <code>Win 7</code>, <code>WinXP</code>, <code>Vista</code></li>
+											<li><strong>MacOS:</strong> <code>Ventura</code>, <code>Sonoma</code>, <code>Sequoia</code>, <code>Monterey</code>, <code>Big Sur</code>, <code>Catalina</code>, <code>OSX</code>, <code>MacOS</code></li>
+											<li><strong>Linux Distros:</strong> <code>Linux Mint</code>, <code>Ubuntu</code>, <code>Fedora</code>, <code>Arch</code>, <code>Pop!_OS</code>, <code>Debian</code>, <code>Manjaro</code></li>
+											<li><strong>Niche Browsers:</strong> <code>Floorp</code>, <code>Waterfox</code>, <code>LibreWolf</code>, <code>Arc</code>, <code>Brave</code>, <code>Vivaldi</code></li>
+										</ul>
+										<p style="margin: 0; background: #e0f2fe; border: 1px solid #7dd3fc; border-radius: 6px; padding: 8px 12px; font-size: 12px; color: #0369a1;"><strong>OS Simplifier Tip:</strong> You can enter full versioned names like <code>Win 11</code> or <code>Ventura</code> or generic names like <code>Windows</code> or <code>Linux</code>. Wildcards (e.g. <code>Win*</code>, <code>MacOS*</code>) are also supported.</p>
+									</div>
+								</details>
+
+								<!-- Accordion 5: Time, Holidays & iCal Feeds -->
+								<details class="formula-help-accordion" style="margin-bottom: 12px; background: #ffffff; border: 1px solid #cbd5e1; border-radius: 8px; overflow: hidden;">
+									<summary style="padding: 12px 16px; font-weight: 700; font-size: 14px; color: #0f172a; background: #f8fafc; cursor: pointer; user-select: none;">⏰ Time, Holidays, Dates & iCal Feeds</summary>
+									<div style="padding: 16px; border-top: 1px solid #e2e8f0;">
+										<ul style="margin: 0 0 12px 0; padding-left: 20px;">
+											<li><code>[hour]</code> – Current hour of the day (0 to 23). E.g. <code>if([hour] >= 14, 15.00, 7.50)</code> for 2 PM cutoff.</li>
+											<li><code>[day]</code> – Day of the week name (e.g. <code>Monday</code>, <code>Friday</code>, <code>Sunday</code>).</li>
+											<li><code>[month]</code> – Month number (1 to 12).</li>
+											<li><code>[is_weekend]</code> – Returns <code>1</code> on Saturday/Sunday, <code>0</code> on weekdays.</li>
+											<li><code>[is_holiday]</code> – Returns <code>1</code> on any public holiday or calendar event.</li>
+											<li><code>[is_holiday="Christmas"]</code> – Returns <code>1</code> if today is Christmas, <code>0</code> otherwise.</li>
+											<li><code>[holiday]</code> – Returns the name of the active holiday or custom calendar event as text.</li>
+											<li><code>[is_date="07-15"]</code> – Returns <code>1</code> if today is July 15th (store anniversary), <code>0</code> otherwise.</li>
+											<li><code>[is_date_range="11-25 to 11-30"]</code> – Returns <code>1</code> if today is within the specified date range.</li>
+										</ul>
+										<p style="margin: 0; background: #f0fdf4; border: 1px solid #86efac; border-radius: 6px; padding: 8px 12px; font-size: 12px; color: #14532d;"><strong>Custom iCal Feeds:</strong> Connect Google Calendar, Apple iCloud, or Outlook <code>.ics</code> URLs under General Settings. In <code>Holiday:</code> prefix mode, events titled <code>Holiday: Festivus</code>, <code>Holiday: First Contact Day</code> 🖖, or <code>Holiday: Summer Sale</code> evaluate <code>[holiday]</code> cleanly to <code>Festivus</code>, <code>First Contact Day</code>, or <code>Summer Sale</code>.</p>
+									</div>
+								</details>
+
+								<!-- Accordion 6: Dynamic Rate Notices, Order Total Line Items & Positioning -->
+								<details class="formula-help-accordion" style="margin-bottom: 12px; background: #ffffff; border: 1px solid #cbd5e1; border-radius: 8px; overflow: hidden;">
 									<summary style="padding: 12px 16px; font-weight: 700; font-size: 14px; color: #0f172a; background: #f8fafc; cursor: pointer; user-select: none;">💬 Dynamic Rate Notices, Order Total Line Items & Positioning</summary>
 									<div style="padding: 16px; border-top: 1px solid #e2e8f0;">
 										<p style="margin: 0 0 8px 0;">Attach custom notice badges or create dynamic standalone cart line items in WooCommerce:</p>
@@ -11357,22 +11281,6 @@ function buildLocFormulaRow(idx, ship, hand, isEnabled, bgClass) {
 									</div>
 								</details>
 
-								<details class="formula-help-accordion" style="margin-bottom: 12px; background: #ffffff; border: 1px solid #cbd5e1; border-radius: 8px; overflow: hidden;">
-									<summary style="padding: 12px 16px; font-weight: 700; font-size: 14px; color: #0f172a; background: #f8fafc; cursor: pointer; user-select: none;">💳 Dynamic Order Total Line Items ([fee], [discount], [sale]) vs [rate]</summary>
-									<div style="padding: 16px; border-top: 1px solid #e2e8f0;">
-										<p style="margin: 0 0 8px 0;">Inject standalone dynamic surcharges and credits directly into the WooCommerce Cart & Checkout Order Totals summary block:</p>
-										<ul style="margin: 0; padding-left: 20px;">
-											<li><code>[fee percent=5 label="Fuel Surcharge"]</code> – Adds a standalone 5% surcharge line item (<strong>Fuel Surcharge: +$3.50</strong>) with emerald green currency icon.</li>
-											<li><code>[fee formula="[qty] * 2.50" label="Hazmat Packaging Fee" icon="warning"]</code> – Adds a standalone packaging surcharge line item with an amber warning icon.</li>
-											<li><code>[discount amount=5.00 label="Subscriber Credit"]</code> – Adds a standalone credit line item (<strong>Subscriber Credit: -$5.00</strong>) with a purple discount tag.</li>
-											<li><code>[sale percent=10 label="Flash Sale Promo"]</code> – Adds a standalone promo credit line item (<strong>Flash Sale Promo: -$4.20</strong>) with a red sale tag.</li>
-											<li><code>[fee amount=10.00 label="Remote Handling" icon="none"]</code> – <code>icon="none"</code> mode renders clean text-only line items without SVG icons.</li>
-											<li><code>[rate percent=10]</code> – Internal math placeholder: calculates 10% of subtotal and bundles it <strong>inside</strong> the shipping rate price itself without creating a separate line item.</li>
-										</ul>
-									</div>
-								</details>
-
-								<details class="formula-help-accordion" style="margin-bottom: 12px; background: #ffffff; border: 1px solid #cbd5e1; border-radius: 8px; overflow: hidden;">
 									<summary style="padding: 12px 16px; font-weight: 700; font-size: 14px; color: #0f172a; background: #f8fafc; cursor: pointer; user-select: none;">🌍 Location & Country Rules Syntax</summary>
 									<div style="padding: 16px; border-top: 1px solid #e2e8f0;">
 										<ul style="margin: 0; padding-left: 20px;">
