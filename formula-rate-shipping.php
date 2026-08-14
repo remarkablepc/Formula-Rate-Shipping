@@ -8,7 +8,7 @@
 
  * Description: Calculate dynamic shipping and handling rates using custom formulas, priority item rules (Categories, Tags & Attributes), location overrides, and an interactive real-time tester.
 
- * Version: 0.69.0
+ * Version: 0.69.1
 
  * Author:      RemarkablePC
 
@@ -3205,109 +3205,87 @@ public static function evaluate( $formula, $contents ) {
 	 */
 
 	private static function resolve_math_functions( $formula ) {
-
 		$max_iterations = 50;
-
 		$iteration = 0;
-
-		while ( preg_match( '/(min|max|sum|avg|average|clamp|round|ceil|floor|abs)\s*\(([^()]*(?:\([^()]*\)[^()]*)*)\)/i', $formula, $m ) && $iteration < $max_iterations ) {
-
+		while ( preg_match( '/(min|max|sum|avg|average|clamp|round|ceil|floor|trunc|abs|sqrt|log|ln|exp|pow|mod)\s*\(([^()]*(?:\([^()]*\)[^()]*)*)\)/i', $formula, $m ) && $iteration < $max_iterations ) {
 			$iteration++;
-
 			$func_name = strtolower( $m[1] );
-
 			$args_str  = $m[2];
-
 			$parts     = self::split_if_args( $args_str );
 
-
-
 			$arg_vals = array();
-
 			foreach ( $parts as $p ) {
-
 				$arg_vals[] = self::evaluate_simple( trim( $p ) );
-
 			}
 
-
-
 			switch ( $func_name ) {
-
 				case 'min':
-
-					$result = min( $arg_vals );
-
+					$result = ! empty( $arg_vals ) ? min( $arg_vals ) : 0;
 					break;
-
 				case 'max':
-
-					$result = max( $arg_vals );
-
+					$result = ! empty( $arg_vals ) ? max( $arg_vals ) : 0;
 					break;
-
 				case 'sum':
-
 					$result = array_sum( $arg_vals );
-
 					break;
-
 				case 'avg':
-
 				case 'average':
-
 					$count  = count( $arg_vals );
-
 					$result = $count > 0 ? array_sum( $arg_vals ) / $count : 0;
-
 					break;
-
 				case 'clamp':
-
 					$val   = isset( $arg_vals[0] ) ? $arg_vals[0] : 0;
-
 					$min_v = isset( $arg_vals[1] ) ? $arg_vals[1] : 0;
-
 					$max_v = isset( $arg_vals[2] ) ? $arg_vals[2] : $val;
-
 					if ( $val < $min_v ) { $val = $min_v; }
-
 					if ( $val > $max_v ) { $val = $max_v; }
-
 					$result = $val;
-
 					break;
-
 				case 'abs':
-
 					$result = abs( isset( $arg_vals[0] ) ? $arg_vals[0] : 0 );
-
 					break;
-
 				case 'ceil':
-
 					$result = ceil( isset( $arg_vals[0] ) ? $arg_vals[0] : 0 );
-
 					break;
-
 				case 'floor':
-
 					$result = floor( isset( $arg_vals[0] ) ? $arg_vals[0] : 0 );
-
 					break;
-
+				case 'trunc':
+					$val    = isset( $arg_vals[0] ) ? floatval( $arg_vals[0] ) : 0.0;
+					$result = $val >= 0 ? floor( $val ) : ceil( $val );
+					break;
 				case 'round':
-
 					$precision = isset( $arg_vals[1] ) ? intval( $arg_vals[1] ) : 0;
-
 					$result    = round( isset( $arg_vals[0] ) ? $arg_vals[0] : 0, $precision );
-
 					break;
-
+				case 'sqrt':
+					$val    = isset( $arg_vals[0] ) ? floatval( $arg_vals[0] ) : 0.0;
+					$result = sqrt( max( 0.0, $val ) );
+					break;
+				case 'log':
+					$val    = isset( $arg_vals[0] ) ? floatval( $arg_vals[0] ) : 0.0;
+					$result = log10( max( 1e-9, $val ) );
+					break;
+				case 'ln':
+					$val    = isset( $arg_vals[0] ) ? floatval( $arg_vals[0] ) : 0.0;
+					$result = log( max( 1e-9, $val ) );
+					break;
+				case 'exp':
+					$val    = isset( $arg_vals[0] ) ? floatval( $arg_vals[0] ) : 0.0;
+					$result = exp( $val );
+					break;
+				case 'pow':
+					$base   = isset( $arg_vals[0] ) ? floatval( $arg_vals[0] ) : 0.0;
+					$exp    = isset( $arg_vals[1] ) ? floatval( $arg_vals[1] ) : 1.0;
+					$result = pow( $base, $exp );
+					break;
+				case 'mod':
+					$a      = isset( $arg_vals[0] ) ? floatval( $arg_vals[0] ) : 0.0;
+					$b      = isset( $arg_vals[1] ) && floatval( $arg_vals[1] ) != 0.0 ? floatval( $arg_vals[1] ) : 1.0;
+					$result = fmod( $a, $b );
+					break;
 				default:
-
 					$result = 0;
-
 			}
 
 
@@ -9098,67 +9076,50 @@ function buildLocFormulaRow(idx, ship, hand, isEnabled, bgClass) {
 
 
 								// Resolve math helper functions (innermost first)
-
-								var mathFunctionRegex = /(min|max|sum|avg|average|clamp|round|ceil|floor|abs)\s*\(([^()]*)\)/i;
-
+								var mathFunctionRegex = /(min|max|sum|avg|average|clamp|round|ceil|floor|trunc|abs|sqrt|log|ln|exp|pow|mod)\s*\(([^()]*)\)/i;
 								var mathFunctionIter = 0;
-
 								while (mathFunctionRegex.test(formula) && mathFunctionIter < 50) {
-
 									mathFunctionIter++;
-
 									var mathMatch = formula.match(mathFunctionRegex);
-
 									var functionName = mathMatch[1].toLowerCase();
-
 									var functionArgs = splitIfArgs(mathMatch[2]).map(function(arg) { return evalSimpleExpr(arg); });
-
 									var functionResult = 0;
 
 									if (functionName === 'min') functionResult = Math.min.apply(Math, functionArgs);
-
 									else if (functionName === 'max') functionResult = Math.max.apply(Math, functionArgs);
-
 									else if (functionName === 'sum') functionResult = functionArgs.reduce(function(a, b) { return a + b; }, 0);
-
 									else if (functionName === 'avg' || functionName === 'average') {
-
 										functionResult = functionArgs.length > 0 ? functionArgs.reduce(function(a, b) { return a + b; }, 0) / functionArgs.length : 0;
-
 									} else if (functionName === 'clamp') {
-
 										var val = functionArgs[0] || 0;
-
 										var minV = functionArgs[1] !== undefined ? functionArgs[1] : 0;
-
 										var maxV = functionArgs[2] !== undefined ? functionArgs[2] : val;
-
 										if (val < minV) val = minV;
-
 										if (val > maxV) val = maxV;
-
 										functionResult = val;
-
 									}
-
 									else if (functionName === 'ceil') functionResult = Math.ceil(functionArgs[0] || 0);
-
 									else if (functionName === 'floor') functionResult = Math.floor(functionArgs[0] || 0);
-
-									else if (functionName === 'abs') functionResult = Math.abs(functionArgs[0] || 0);
-
-									else if (functionName === 'round') {
-
-										var precision = functionArgs.length > 1 ? parseInt(functionArgs[1], 10) : 0;
-
-										var factor = Math.pow(10, precision);
-
-										functionResult = Math.round((functionArgs[0] || 0) * factor) / factor;
-
+									else if (functionName === 'trunc') {
+										var tVal = functionArgs[0] || 0;
+										functionResult = Math.trunc ? Math.trunc(tVal) : (tVal >= 0 ? Math.floor(tVal) : Math.ceil(tVal));
 									}
-
+									else if (functionName === 'abs') functionResult = Math.abs(functionArgs[0] || 0);
+									else if (functionName === 'sqrt') functionResult = Math.sqrt(Math.max(0, functionArgs[0] || 0));
+									else if (functionName === 'log') functionResult = Math.log10 ? Math.log10(Math.max(1e-9, functionArgs[0] || 0)) : (Math.log(Math.max(1e-9, functionArgs[0] || 0)) / Math.LN10);
+									else if (functionName === 'ln') functionResult = Math.log(Math.max(1e-9, functionArgs[0] || 0));
+									else if (functionName === 'exp') functionResult = Math.exp(functionArgs[0] || 0);
+									else if (functionName === 'pow') functionResult = Math.pow(functionArgs[0] || 0, functionArgs[1] !== undefined ? functionArgs[1] : 1);
+									else if (functionName === 'mod') {
+										var b = functionArgs[1] !== undefined && functionArgs[1] !== 0 ? functionArgs[1] : 1;
+										functionResult = (functionArgs[0] || 0) % b;
+									}
+									else if (functionName === 'round') {
+										var precision = functionArgs.length > 1 ? parseInt(functionArgs[1], 10) : 0;
+										var factor = Math.pow(10, precision);
+										functionResult = Math.round((functionArgs[0] || 0) * factor) / factor;
+									}
 									formula = formula.replace(mathMatch[0], functionResult.toFixed(4));
-
 								}
 
 
@@ -11363,8 +11324,42 @@ function buildLocFormulaRow(idx, ship, hand, isEnabled, bgClass) {
 
 
 
-								<!-- Accordion 1: Cart, Item & Dimensional Placeholders -->
+								<!-- Accordion 0: Math Functions, Operators & Aliases -->
 								<details class="formula-help-accordion" style="margin-bottom: 12px; background: #ffffff; border: 1px solid #cbd5e1; border-radius: 8px; overflow: hidden;" open>
+									<summary style="padding: 12px 16px; font-weight: 700; font-size: 14px; color: #0f172a; background: #f8fafc; cursor: pointer; user-select: none;">📐 Mathematical Functions, Operators & Aliases</summary>
+									<div style="padding: 16px; border-top: 1px solid #e2e8f0;">
+										<p style="margin: 0 0 10px 0;">Use standard math operators (<code>+</code>, <code>-</code>, <code>*</code>, <code>/</code>, <code>%</code>, <code>^</code>), conditionals (<code>if(cond, a, b)</code>, <code>cond ? a : b</code>), and built-in functions:</p>
+										
+										<table style="width: 100%; border-collapse: collapse; font-size: 12px; border: 1px solid #e2e8f0; margin-bottom: 12px;">
+											<tr style="background: #f8fafc; text-align: left;">
+												<th style="padding: 6px 10px; border: 1px solid #e2e8f0;">Function</th>
+												<th style="padding: 6px 10px; border: 1px solid #e2e8f0;">Description</th>
+												<th style="padding: 6px 10px; border: 1px solid #e2e8f0;">Example</th>
+											</tr>
+											<tr><td style="padding: 6px 10px; border: 1px solid #e2e8f0;"><code>min(a, b, ...)</code></td><td style="padding: 6px 10px; border: 1px solid #e2e8f0;">Returns the smallest value</td><td style="padding: 6px 10px; border: 1px solid #e2e8f0;"><code>min(5.00, [qty] * 2.50)</code></td></tr>
+											<tr><td style="padding: 6px 10px; border: 1px solid #e2e8f0;"><code>max(a, b, ...)</code></td><td style="padding: 6px 10px; border: 1px solid #e2e8f0;">Returns the largest value</td><td style="padding: 6px 10px; border: 1px solid #e2e8f0;"><code>max(10.00, [weight] * 1.50)</code></td></tr>
+											<tr><td style="padding: 6px 10px; border: 1px solid #e2e8f0;"><code>sum(a, b, ...)</code></td><td style="padding: 6px 10px; border: 1px solid #e2e8f0;">Returns the sum of all arguments</td><td style="padding: 6px 10px; border: 1px solid #e2e8f0;"><code>sum(4.50, [weight] * 1.20, 2.00)</code></td></tr>
+											<tr><td style="padding: 6px 10px; border: 1px solid #e2e8f0;"><code>avg(a, b, ...)</code></td><td style="padding: 6px 10px; border: 1px solid #e2e8f0;">Returns the average of all arguments</td><td style="padding: 6px 10px; border: 1px solid #e2e8f0;"><code>avg([cost], 50.00) * 0.10</code></td></tr>
+											<tr><td style="padding: 6px 10px; border: 1px solid #e2e8f0;"><code>clamp(x, min, max)</code></td><td style="padding: 6px 10px; border: 1px solid #e2e8f0;">Restricts x to the inclusive range [min, max]</td><td style="padding: 6px 10px; border: 1px solid #e2e8f0;"><code>clamp([weight] * 2.00, 5.00, 25.00)</code></td></tr>
+											<tr><td style="padding: 6px 10px; border: 1px solid #e2e8f0;"><code>round(x, p)</code></td><td style="padding: 6px 10px; border: 1px solid #e2e8f0;">Rounds to p decimal places</td><td style="padding: 6px 10px; border: 1px solid #e2e8f0;"><code>round([cost] * 0.10, 2)</code></td></tr>
+											<tr><td style="padding: 6px 10px; border: 1px solid #e2e8f0;"><code>ceil(x)</code></td><td style="padding: 6px 10px; border: 1px solid #e2e8f0;">Rounds up to the nearest integer</td><td style="padding: 6px 10px; border: 1px solid #e2e8f0;"><code>ceil([weight]) * 1.50</code></td></tr>
+											<tr><td style="padding: 6px 10px; border: 1px solid #e2e8f0;"><code>floor(x)</code></td><td style="padding: 6px 10px; border: 1px solid #e2e8f0;">Rounds down to the nearest integer</td><td style="padding: 6px 10px; border: 1px solid #e2e8f0;"><code>floor([qty] / 6) * 10.00</code></td></tr>
+											<tr><td style="padding: 6px 10px; border: 1px solid #e2e8f0;"><code>trunc(x)</code></td><td style="padding: 6px 10px; border: 1px solid #e2e8f0;">Removes decimal portion without rounding</td><td style="padding: 6px 10px; border: 1px solid #e2e8f0;"><code>trunc([weight]) * 2.00</code></td></tr>
+											<tr><td style="padding: 6px 10px; border: 1px solid #e2e8f0;"><code>abs(x)</code></td><td style="padding: 6px 10px; border: 1px solid #e2e8f0;">Returns the absolute value</td><td style="padding: 6px 10px; border: 1px solid #e2e8f0;"><code>abs([qty] - 10) * 0.50</code></td></tr>
+											<tr><td style="padding: 6px 10px; border: 1px solid #e2e8f0;"><code>sqrt(x)</code></td><td style="padding: 6px 10px; border: 1px solid #e2e8f0;">Square root of x</td><td style="padding: 6px 10px; border: 1px solid #e2e8f0;"><code>sqrt([volume]) * 1.50</code></td></tr>
+											<tr><td style="padding: 6px 10px; border: 1px solid #e2e8f0;"><code>log(x)</code></td><td style="padding: 6px 10px; border: 1px solid #e2e8f0;">Base-10 logarithm of x</td><td style="padding: 6px 10px; border: 1px solid #e2e8f0;"><code>log([cost] + 1) * 5.00</code></td></tr>
+											<tr><td style="padding: 6px 10px; border: 1px solid #e2e8f0;"><code>ln(x)</code></td><td style="padding: 6px 10px; border: 1px solid #e2e8f0;">Natural logarithm of x</td><td style="padding: 6px 10px; border: 1px solid #e2e8f0;"><code>ln([weight] + 1) * 3.00</code></td></tr>
+											<tr><td style="padding: 6px 10px; border: 1px solid #e2e8f0;"><code>exp(x)</code></td><td style="padding: 6px 10px; border: 1px solid #e2e8f0;">Exponential (e raised to power x)</td><td style="padding: 6px 10px; border: 1px solid #e2e8f0;"><code>exp([qty] * 0.05) + 3.00</code></td></tr>
+											<tr><td style="padding: 6px 10px; border: 1px solid #e2e8f0;"><code>pow(a, b)</code></td><td style="padding: 6px 10px; border: 1px solid #e2e8f0;">Exponentiation (alias for a ^ b)</td><td style="padding: 6px 10px; border: 1px solid #e2e8f0;"><code>pow([weight], 0.8) * 4.00</code></td></tr>
+											<tr><td style="padding: 6px 10px; border: 1px solid #e2e8f0;"><code>mod(a, b)</code></td><td style="padding: 6px 10px; border: 1px solid #e2e8f0;">Modulo remainder (alias for a % b)</td><td style="padding: 6px 10px; border: 1px solid #e2e8f0;"><code>mod([qty], 6) * 1.50</code></td></tr>
+										</table>
+
+										<p style="margin: 0; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 8px 12px; font-size: 12px; color: #475569;"><strong>Alias Functions:</strong> <code>pow(a, b)</code> is an alias for <code>a ^ b</code>, and <code>mod(a, b)</code> is an alias for <code>a % b</code>.</p>
+									</div>
+								</details>
+
+								<!-- Accordion 1: Cart, Item & Dimensional Placeholders -->
+								<details class="formula-help-accordion" style="margin-bottom: 12px; background: #ffffff; border: 1px solid #cbd5e1; border-radius: 8px; overflow: hidden;">
 									<summary style="padding: 12px 16px; font-weight: 700; font-size: 14px; color: #0f172a; background: #f8fafc; cursor: pointer; user-select: none;">📦 Cart, Item & Dimensional Placeholders</summary>
 									<div style="padding: 16px; border-top: 1px solid #e2e8f0;">
 										<ul style="margin: 0; padding-left: 20px;">

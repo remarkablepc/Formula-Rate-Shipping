@@ -1,4 +1,4 @@
-# Formula Rate Shipping for WooCommerce (v0.69.0)
+# Formula Rate Shipping for WooCommerce (v0.69.1)
 
 **Formula Rate Shipping** is a powerful, flexible WooCommerce shipping method plugin that lets you construct custom dynamic shipping and handling formulas, set priority rules by product category, tag, attribute, or variation, apply location and regional overrides, and test everything in real-time with an interactive simulator.
 
@@ -20,7 +20,7 @@ Most WooCommerce shipping plugins fall into two camps: **table-rate** (rigid loo
 
 ## Maturity Status
 
-**Version 0.69.0 -- Production-Ready Release**
+**Version 0.69.1 -- Production-Ready Release**
 
 This plugin has been through 35+ iterations of active development. The core formula engine and rule resolution logic are stable and battle-tested. It is suitable for production use by technically-minded store owners.
 
@@ -245,10 +245,25 @@ The `CONTAINS` operator performs a case-insensitive substring match:
 |----------|-------------|---------|
 | `min(a, b, ...)` | Returns the smallest value | `min(5.00, [qty] * 2.50)` |
 | `max(a, b, ...)` | Returns the largest value | `max(10.00, [weight] * 1.50)` |
+| `sum(a, b, ...)` | Returns the sum of all arguments | `sum(4.50, [weight] * 1.20, 2.00)` |
+| `avg(a, b, ...)` | Returns the average of all arguments | `avg([cost], 50.00) * 0.10` |
+| `clamp(x, min, max)` | Restricts `x` to the inclusive range `[min, max]` | `clamp([weight] * 2.00, 5.00, 25.00)` |
 | `round(x, p)` | Rounds to `p` decimal places | `round([cost] * 0.10, 2)` |
 | `ceil(x)` | Rounds up to the nearest integer | `ceil([weight]) * 1.50` |
 | `floor(x)` | Rounds down to the nearest integer | `floor([qty] / 6) * 10.00` |
+| `trunc(x)` | Removes decimal portion without rounding | `trunc([weight]) * 2.00` |
 | `abs(x)` | Returns the absolute value | `abs([qty] - 10) * 0.50` |
+| `sqrt(x)` | Square root of `x` | `sqrt([volume]) * 1.50` |
+| `log(x)` | Base-10 logarithm of `x` | `log([cost] + 1) * 5.00` |
+| `ln(x)` | Natural logarithm of `x` | `ln([weight] + 1) * 3.00` |
+| `exp(x)` | Exponential (`e` raised to power `x`) | `exp([qty] * 0.05) + 3.00` |
+| `pow(a, b)` | Exponentiation (alias for `a ^ b`) | `pow([weight], 0.8) * 4.00` |
+| `mod(a, b)` | Modulo remainder (alias for `a % b`) | `mod([qty], 6) * 1.50` |
+
+#### Alias Functions
+The formula engine includes functional aliases for operator shorthand:
+- **`pow(a, b)` ↔ `a ^ b`**: Computes `a` raised to the power `b` (e.g. `pow([weight], 2)` is identical to `[weight] ^ 2`).
+- **`mod(a, b)` ↔ `a % b`**: Returns the remainder of division (e.g. `mod([qty], 6)` is identical to `[qty] % 6`).
 
 ---
 
@@ -396,10 +411,10 @@ if([product="Hardcover"], 5.00, 3.00)
 
 ## Installation & Setup
 
-1. Download `formula-rate-shipping-v0.69.0.zip`.
+1. Download `formula-rate-shipping-v0.69.1.zip`.
 2. Log into your WordPress Admin Dashboard.
 3. Navigate to **Plugins** -> **Add New** -> **Upload Plugin**.
-4. Upload `formula-rate-shipping-v0.69.0.zip` and click **Activate**.
+4. Upload `formula-rate-shipping-v0.69.1.zip` and click **Activate**.
 5. Go to **WooCommerce** -> **Settings** -> **Shipping** -> **Formula Rate Shipping** to configure your formulas and rules.
 
 > **Tip on WooCommerce Shipping Cache:** WooCommerce caches shipping rates in customer sessions. When updating settings or testing live rates, change the customer ZIP code on the checkout page or clear transients under **WooCommerce -> Status -> Tools -> Clear transients**.
