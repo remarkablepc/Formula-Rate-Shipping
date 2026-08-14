@@ -5854,6 +5854,9 @@ function formula_rate_shipping_init() {
 							function buildLocMainRow(idx, ruleType, country, state, locPat, user, metaKey, metaValue, isEnabled, bgClass, deviceTarget, osTarget) {
 	ruleType = normalizeLocRuleType(ruleType || 'location');
 	isEnabled = (isEnabled !== false);
+	country = country || 'ALL';
+	state = state || '';
+	var isSingleCountry = (country && typeof country === 'string' && /^[A-Z]{2}$/i.test(country.trim()) && country.trim().toUpperCase() !== 'ALL');
 
 	var geoDisplay  = (ruleType === 'location') ? 'block' : 'none';
 	var userDisplay = (ruleType !== 'location' && ruleType !== 'user_meta') ? 'block' : 'none';
