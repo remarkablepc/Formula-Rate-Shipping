@@ -8,7 +8,7 @@
 
  * Description: Calculate dynamic shipping and handling rates using custom formulas, priority item rules (Categories, Tags & Attributes), location overrides, and an interactive real-time tester.
 
- * Version: 0.62.8
+ * Version: 0.62.9
 
  * Author:      RemarkablePC
 
@@ -296,46 +296,57 @@ class Formula_Evaluator {
 
 	 */
 
-	private static function normalize_country_reference( $country_value ) {
-
+	public static function normalize_country_reference( $country_value ) {
 		$country_value = trim( (string) $country_value );
+		// Strip single or double quotes
+		$country_value = preg_replace( '/^[\'"]|[\'"]$/', '', $country_value );
+		$country_value = trim( $country_value );
 
 		if ( '' === $country_value ) {
-
 			return '';
-
 		}
-
-
 
 		$country_code = strtoupper( $country_value );
-
 		if ( preg_match( '/^[A-Z]{2}$/', $country_code ) ) {
-
 			return $country_code;
-
 		}
-
-
 
 		if ( function_exists( 'WC' ) && WC() && isset( WC()->countries ) && ! empty( WC()->countries->countries ) && is_array( WC()->countries->countries ) ) {
-
 			foreach ( WC()->countries->countries as $code => $label ) {
-
 				if ( strtolower( trim( (string) $label ) ) === strtolower( $country_value ) ) {
-
 					return strtoupper( $code );
-
 				}
-
 			}
-
 		}
 
+		$common_countries = array(
+			'UNITED STATES'            => 'US',
+			'UNITED STATES OF AMERICA' => 'US',
+			'USA'                      => 'US',
+			'CANADA'                   => 'CA',
+			'CAN'                      => 'CA',
+			'UNITED KINGDOM'           => 'GB',
+			'GREAT BRITAIN'            => 'GB',
+			'UK'                       => 'GB',
+			'MEXICO'                   => 'MX',
+			'MEX'                      => 'MX',
+			'GERMANY'                  => 'DE',
+			'FRANCE'                   => 'FR',
+			'AUSTRALIA'                => 'AU',
+			'ITALY'                    => 'IT',
+			'SPAIN'                    => 'ES',
+			'NEW ZEALAND'              => 'NZ',
+			'JAPAN'                    => 'JP',
+			'CHINA'                    => 'CN',
+			'BRAZIL'                   => 'BR',
+			'INDIA'                    => 'IN',
+		);
 
+		if ( isset( $common_countries[ $country_code ] ) ) {
+			return $common_countries[ $country_code ];
+		}
 
 		return $country_code;
-
 	}
 
 
@@ -5360,8 +5371,10 @@ function formula_rate_shipping_init() {
 													<div class="loc-geo-fields" style="display: <?php echo esc_attr( $geo_display ); ?>;">
 														<div class="formula-mini-target-shell formula-mini-target-shell-location">
 															<?php
-															$country_clean = trim( strtoupper( $country ) );
-															$is_single_country = ( '' !== $country_clean && 'ALL' !== $country_clean && false === strpos( $country_clean, ',' ) && false === strpos( $country_clean, ';' ) );
+															$country_clean = trim( (string) $country );
+															$country_clean = preg_replace( '/^[\'"]|[\'"]$/', '', $country_clean );
+															$country_clean = trim( strtoupper( $country_clean ) );
+															$is_single_country = ( '' !== $country_clean && 'ALL' !== $country_clean && false === strpos( $country, ',' ) && false === strpos( $country, ';' ) );
 															?>
 															<div class="formula-location-inline-fields formula-mini-target-grid formula-mini-target-grid-location" data-has-state="<?php echo $is_single_country ? 'true' : 'false'; ?>">
 																<div class="formula-loc-col formula-loc-col-country">
@@ -5859,8 +5872,9 @@ function formula_rate_shipping_init() {
 	isEnabled = (isEnabled !== false);
 	country = country || '';
 	state = state || '';
-	var countryClean = (country || '').trim().toUpperCase();
-	var isSingleCountry = (countryClean !== '' && countryClean !== 'ALL' && countryClean.indexOf(',') === -1 && countryClean.indexOf(';') === -1);
+	var countryRaw = (country || '').trim();
+	var countryClean = countryRaw.replace(/^['"]|['"]$/g, '').trim().toUpperCase();
+	var isSingleCountry = (countryClean !== '' && countryClean !== 'ALL' && countryRaw.indexOf(',') === -1 && countryRaw.indexOf(';') === -1);
 
 	var geoDisplay  = (ruleType === 'location') ? 'block' : 'none';
 	var userDisplay = (ruleType !== 'location' && ruleType !== 'user_meta') ? 'block' : 'none';
@@ -12463,47 +12477,35 @@ function buildLocFormulaRow(idx, ship, hand, isEnabled, bgClass) {
 
 
 		private static function parse_rule_match_tokens( $value, $allow_space_delimited = false ) {
-
 			if ( ! is_string( $value ) ) {
-
 				return array();
-
 			}
-
-
 
 			$value = trim( $value );
-
 			if ( '' === $value ) {
-
 				return array();
-
 			}
 
-
-
-			if ( false !== strpos( $value, ',' ) ) {
-
-				$tokens = array_map( 'trim', explode( ',', $value ) );
-
-			} elseif ( $allow_space_delimited && preg_match( '/\s+/', $value ) ) {
-
+			if ( false !== strpos( $value, ',' ) || false !== strpos( $value, ';' ) ) {
+				preg_match_all( '/(?:"[^"]*"|\'[^\']*\'|[^,;])+/', $value, $matches );
+				$tokens = isset( $matches[0] ) ? $matches[0] : array( $value );
+			} elseif ( $allow_space_delimited && preg_match( '/\s+/', $value ) && ! preg_match( '/^[\'"].*[\'"]$/', $value ) ) {
 				$tokens = preg_split( '/\s+/', $value );
-
 			} else {
-
 				$tokens = array( $value );
-
 			}
 
+			$clean_tokens = array();
+			foreach ( $tokens as $token ) {
+				$token = trim( (string) $token );
+				$token = preg_replace( '/^[\'"]|[\'"]$/', '', $token );
+				$token = trim( $token );
+				if ( '' !== $token ) {
+					$clean_tokens[] = $token;
+				}
+			}
 
-
-			return array_values( array_filter( $tokens, static function( $token ) {
-
-				return '' !== trim( $token );
-
-			} ) );
-
+			return $clean_tokens;
 		}
 
 
@@ -14815,10 +14817,11 @@ if ( ! function_exists( 'formula_rate_shipping_inject_admin_css' ) ) {
 				var countryInput = mainRow.find('.formula-loc-country-input');
 				if (!countryInput.length) return;
 
-				var countryVal = (countryInput.val() || '').trim().toUpperCase();
+				var countryRaw = String(countryInput.val() || '').trim();
+				var countryClean = countryRaw.replace(/^['"]|['"]$/g, '').trim().toUpperCase();
 				var stateInput = mainRow.find('.formula-loc-state-input');
 				var grid       = mainRow.find('.formula-mini-target-grid-location');
-				var isSingleCountry = (countryVal !== '' && countryVal !== 'ALL' && countryVal.indexOf(',') === -1 && countryVal.indexOf(';') === -1);
+				var isSingleCountry = (countryClean !== '' && countryClean !== 'ALL' && countryRaw.indexOf(',') === -1 && countryRaw.indexOf(';') === -1);
 
 				if (isSingleCountry) {
 					stateInput.prop('disabled', false).attr('placeholder', 'e.g. CA, ON, NY or ALL');
