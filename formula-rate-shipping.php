@@ -8,7 +8,7 @@
 
  * Description: Calculate dynamic shipping and handling rates using custom formulas, priority item rules (Categories, Tags & Attributes), location overrides, and an interactive real-time tester.
 
- * Version: 0.64.0
+ * Version: 0.65.0
 
  * Author:      RemarkablePC
 
@@ -1536,23 +1536,69 @@ class Formula_Evaluator {
 
 
 		// [message="..."] (no icon), [notice="..."] (info icon), [warning="..."] (warning icon)
-
 		$formula = preg_replace_callback( '/\[(message|notice|warning)\s*=\s*[\'"]([^\'"]+)[\'"]\]/i', function( $matches ) {
-
 			if ( isset( $GLOBALS['formula_shipping_current_notices'] ) && is_array( $GLOBALS['formula_shipping_current_notices'] ) ) {
-
 				$GLOBALS['formula_shipping_current_notices'][] = array(
-
 					'type'    => strtolower( $matches[1] ),
-
 					'message' => trim( $matches[2] ),
-
 				);
+			}
+			return '0';
+		}, $formula );
 
+		// [fee ...], [discount ...], [sale ...] - Dynamic Order Total Line Items
+		$formula = preg_replace_callback( '/\[(fee|discount|sale)([^\]]*)\]/i', function( $matches ) use ( $contents ) {
+			$type_tag = strtolower( $matches[1] );
+			$attr_str = $matches[2];
+
+			$label = '';
+			if ( preg_match( '/label\s*=\s*[\'"]([^\'"]+)[\'"]/i', $attr_str, $m ) ) {
+				$label = trim( $m[1] );
+			} elseif ( 'fee' === $type_tag ) {
+				$label = 'Surcharge';
+			} elseif ( 'sale' === $type_tag ) {
+				$label = 'Sale Discount';
+			} else {
+				$label = 'Shipping Credit';
+			}
+
+			$icon = '';
+			if ( preg_match( '/icon\s*=\s*[\'"]([^\'"]+)[\'"]/i', $attr_str, $m ) ) {
+				$icon = strtolower( trim( $m[1] ) );
+			}
+
+			$fee_amount = 0.0;
+			if ( preg_match( '/amount\s*=\s*([0-9\.]+)/i', $attr_str, $m ) ) {
+				$fee_amount = floatval( $m[1] );
+			} elseif ( preg_match( '/percent\s*=\s*([0-9\.]+)/i', $attr_str, $m ) ) {
+				$pct = floatval( $m[1] );
+				$subtotal = 0.0;
+				foreach ( $contents as $item ) {
+					$subtotal += floatval( isset( $item['line_total'] ) ? $item['line_total'] : ( isset( $item['price'] ) ? $item['price'] * ( isset( $item['qty'] ) ? $item['qty'] : 1 ) : 0 ) );
+				}
+				$fee_amount = ( $subtotal * $pct ) / 100.0;
+			} elseif ( preg_match( '/formula\s*=\s*[\'"]([^\'"]+)[\'"]/i', $attr_str, $m ) ) {
+				try {
+					$fee_amount = floatval( self::evaluate( $m[1], $contents ) );
+				} catch ( Exception $e ) {
+					$fee_amount = 0.0;
+				}
+			}
+
+			if ( 'discount' === $type_tag || 'sale' === $type_tag ) {
+				$fee_amount = -abs( $fee_amount );
+			}
+
+			if ( isset( $GLOBALS['formula_shipping_current_fees'] ) && is_array( $GLOBALS['formula_shipping_current_fees'] ) ) {
+				$GLOBALS['formula_shipping_current_fees'][] = array(
+					'type'   => $type_tag,
+					'label'  => $label,
+					'amount' => $fee_amount,
+					'icon'   => $icon,
+				);
 			}
 
 			return '0';
-
 		}, $formula );
 
 
@@ -8501,6 +8547,7 @@ function buildLocFormulaRow(idx, ship, hand, isEnabled, bgClass) {
 								});
 
 								formula = formula.replace(/\[(?:notice|message|warning)\s*=\s*['"][^'"]+['"]\]/gi, '0');
+								formula = formula.replace(/\[(?:fee|discount|sale)[^\]]*\]/gi, '0');
 
 
 
@@ -11223,6 +11270,26 @@ function buildLocFormulaRow(idx, ship, hand, isEnabled, bgClass) {
 									<li><code>if([is_international], 15.00 + [warning="Hazardous Materials Ground Shipping Only"], 5.00)</code> – Displays an amber ⚠️ Warning badge: <strong>Hazardous Materials Ground Shipping Only</strong>.</li>
 
 									<li><code>if([is_holiday="Christmas"], 0.00 + [message="Christmas Free Shipping Perk"], 7.50)</code> – Displays a blue 💬 Chat badge on Christmas Day.</li>
+
+								</ul>
+
+								<h4 style="margin: 0 0 10px 0; font-size: 15px; color: #1e293b; font-weight: 700; border-bottom: 1px solid #e2e8f0; padding-bottom: 8px;">💳 Dynamic Order Total Line Items ([fee], [discount], [sale]) vs [rate]</h4>
+
+								<p style="margin: 0 0 8px 0;">Inject standalone dynamic surcharges and credits directly into the WooCommerce Cart & Checkout Order Totals summary block:</p>
+
+								<ul style="margin: 0 0 18px 0; padding-left: 20px;">
+
+									<li><code>[fee percent=5 label="Fuel Surcharge"]</code> – Adds a standalone 5% surcharge line item (<strong>Fuel Surcharge: +$3.50</strong>) with emerald green currency icon.</li>
+
+									<li><code>[fee formula="[qty] * 2.50" label="Hazmat Packaging Fee" icon="warning"]</code> – Adds a standalone packaging surcharge line item with an amber warning icon.</li>
+
+									<li><code>[discount amount=5.00 label="Subscriber Credit"]</code> – Adds a standalone credit line item (<strong>Subscriber Credit: -$5.00</strong>) with a purple discount tag.</li>
+
+									<li><code>[sale percent=10 label="Flash Sale Promo"]</code> – Adds a standalone promo credit line item (<strong>Flash Sale Promo: -$4.20</strong>) with a red sale tag.</li>
+
+									<li><code>[fee amount=10.00 label="Remote Handling" icon="none"]</code> – <code>icon="none"</code> mode renders clean text-only line items without SVG icons.</li>
+
+									<li><code>[rate percent=10]</code> – Internal math placeholder: calculates 10% of subtotal and bundles it <strong>inside</strong> the shipping rate price itself without creating a separate line item.</li>
 
 								</ul>
 

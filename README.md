@@ -1,4 +1,4 @@
-# Formula Rate Shipping for WooCommerce (v0.64.0)
+# Formula Rate Shipping for WooCommerce (v0.65.0)
 
 **Formula Rate Shipping** is a powerful, flexible WooCommerce shipping method plugin that lets you construct custom dynamic shipping and handling formulas, set priority rules by product category, tag, attribute, or variation, apply location and regional overrides, and test everything in real-time with an interactive simulator.
 
@@ -20,7 +20,7 @@ Most WooCommerce shipping plugins fall into two camps: **table-rate** (rigid loo
 
 ## Maturity Status
 
-**Version 0.64.0 -- Production-Ready Release**
+**Version 0.65.0 -- Production-Ready Release**
 
 This plugin has been through 35+ iterations of active development. The core formula engine and rule resolution logic are stable and battle-tested. It is suitable for production use by technically-minded store owners.
 
@@ -127,17 +127,15 @@ Formulas support standard mathematical expressions and variables evaluated per m
 - `[hour]`, `[day]`, `[month]`, `[is_weekend]` -- Current store-time context values.
 - `[is_date="07-15"]`, `[is_date_range="11-25 to 11-30"]` -- Date and inclusive date-range checks.
 - `[is_holiday]`, `[is_holiday="Christmas"]`, `[holiday]` -- Public-holiday checks and active holiday name.
-- `[notice="Message"]` / `[message="Message"]` -- Displays text beneath the applicable shipping rate in the classic cart and checkout. Put the tag in a matching context rule to make the message conditional.
+- `[notice="..."]` / `[message="..."]` / `[warning="..."]` -- Displays styled notice badges (blue 💬 chat, green ℹ️ info, or amber ⚠️ warning) beneath the applicable shipping rate in classic cart and checkout.
 
-Example: create a **Browser = Firefox** rule and include `[message="Thank you for using Firefox"]` in its shipping or handling formula. The tag contributes `0` to the calculation and displays the message when that rule is evaluated.
+#### Standalone Order Total Line Items ([fee], [discount], [sale]) vs Internal [rate]
 
-#### Percentage Rate Placeholder
-- `[rate percent=10]` -- Calculates a rate equal to 10% of the matching cart subtotal.
-- `[rate percent=10 min_fee=5]` -- Same, but enforces a $5.00 minimum rate.
-- `[rate percent=10 max_fee=50]` -- Same, but enforces a $50.00 maximum rate.
-- `[rate percent=10 category="books"]` -- Calculates 10% of only the subtotal of items in the `books` category.
-- `[rate percent=10 tag="fragile"]` -- Calculates 10% of only the subtotal of items with the `fragile` tag.
-- `[rate percent=10 variation="Hardcover"]` -- Calculates 10% of only the subtotal of items matching the `Hardcover` variation.
+- **`[rate percent=10]` (Internal Rate Math)** -- Calculates 10% of subtotal and bundles it *inside* the shipping rate calculation itself without creating a separate line item. Supports `min_fee`, `max_fee`, `category`, `tag`, and `variation` filters.
+- **`[fee label="..." percent=5]` (Cart Surcharge Line Item)** -- Creates a standalone positive surcharge line item in the WooCommerce Cart & Checkout Order Totals summary block (e.g. `Fuel Surcharge: +$3.50`). Supports `amount=X`, `percent=X`, `formula="..."`, and `icon="..."`. Default icon uses active WooCommerce currency symbol (`$`, `£`, `€`, `¥`).
+- **`[discount label="..." amount=5.00]` (Cart Credit Line Item)** -- Creates a standalone negative credit line item in cart totals (e.g. `VIP Credit: -$5.00`) with purple discount tag.
+- **`[sale label="..." percent=10]` (Cart Promo Credit Line Item)** -- Creates a standalone promo credit line item (e.g. `Flash Sale Promo: -$4.20`) with red sale tag.
+- **`icon="none"` Mode** -- Renders clean, text-only cart line items without SVG icons.
 
 ### User Role & Identity Variables
 
@@ -387,10 +385,10 @@ if([product="Hardcover"], 5.00, 3.00)
 
 ## Installation & Setup
 
-1. Download `formula-rate-shipping-v0.64.0.zip`.
+1. Download `formula-rate-shipping-v0.65.0.zip`.
 2. Log into your WordPress Admin Dashboard.
 3. Navigate to **Plugins** -> **Add New** -> **Upload Plugin**.
-4. Upload `formula-rate-shipping-v0.64.0.zip` and click **Activate**.
+4. Upload `formula-rate-shipping-v0.65.0.zip` and click **Activate**.
 5. Go to **WooCommerce** -> **Settings** -> **Shipping** -> **Formula Rate Shipping** to configure your formulas and rules.
 
 > **Tip on WooCommerce Shipping Cache:** WooCommerce caches shipping rates in customer sessions. When updating settings or testing live rates, change the customer ZIP code on the checkout page or clear transients under **WooCommerce -> Status -> Tools -> Clear transients**.
