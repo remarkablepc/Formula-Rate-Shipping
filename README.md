@@ -1,4 +1,4 @@
-# Formula Rate Shipping for WooCommerce (v0.65.1)
+# Formula Rate Shipping for WooCommerce (v0.66.0)
 
 **Formula Rate Shipping** is a powerful, flexible WooCommerce shipping method plugin that lets you construct custom dynamic shipping and handling formulas, set priority rules by product category, tag, attribute, or variation, apply location and regional overrides, and test everything in real-time with an interactive simulator.
 
@@ -20,7 +20,7 @@ Most WooCommerce shipping plugins fall into two camps: **table-rate** (rigid loo
 
 ## Maturity Status
 
-**Version 0.65.1 -- Production-Ready Release**
+**Version 0.66.0 -- Production-Ready Release**
 
 This plugin has been through 35+ iterations of active development. The core formula engine and rule resolution logic are stable and battle-tested. It is suitable for production use by technically-minded store owners.
 
@@ -127,7 +127,7 @@ Formulas support standard mathematical expressions and variables evaluated per m
 - `[hour]`, `[day]`, `[month]`, `[is_weekend]` -- Current store-time context values.
 - `[is_date="07-15"]`, `[is_date_range="11-25 to 11-30"]` -- Date and inclusive date-range checks.
 - `[is_holiday]`, `[is_holiday="Christmas"]`, `[holiday]` -- Public-holiday checks and active holiday name.
-- `[notice="..."]` / `[message="..."]` / `[warning="..."]` -- Displays styled notice badges (blue 💬 chat, green ℹ️ info, or amber ⚠️ warning) beneath the applicable shipping rate in classic cart and checkout.
+- `[notice="..."]` / `[message="..."]` / `[warning="..."]` -- Displays styled notice badges (blue 💬 chat, green ℹ️ info, or amber ⚠️ warning). Supports optional `position="..."` parameter: `under_rate` (default, beneath rate title), `cart_table` (below product items list on left column), `before_shipping` (above shipping options), `after_shipping` (below shipping options), or `top` / `global` (top alert banner).
 
 #### Standalone Order Total Line Items ([fee], [discount], [sale]) vs Internal [rate]
 
@@ -385,10 +385,10 @@ if([product="Hardcover"], 5.00, 3.00)
 
 ## Installation & Setup
 
-1. Download `formula-rate-shipping-v0.65.1.zip`.
+1. Download `formula-rate-shipping-v0.66.0.zip`.
 2. Log into your WordPress Admin Dashboard.
 3. Navigate to **Plugins** -> **Add New** -> **Upload Plugin**.
-4. Upload `formula-rate-shipping-v0.65.1.zip` and click **Activate**.
+4. Upload `formula-rate-shipping-v0.66.0.zip` and click **Activate**.
 5. Go to **WooCommerce** -> **Settings** -> **Shipping** -> **Formula Rate Shipping** to configure your formulas and rules.
 
 > **Tip on WooCommerce Shipping Cache:** WooCommerce caches shipping rates in customer sessions. When updating settings or testing live rates, change the customer ZIP code on the checkout page or clear transients under **WooCommerce -> Status -> Tools -> Clear transients**.

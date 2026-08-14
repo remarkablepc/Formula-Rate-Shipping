@@ -8,7 +8,7 @@
 
  * Description: Calculate dynamic shipping and handling rates using custom formulas, priority item rules (Categories, Tags & Attributes), location overrides, and an interactive real-time tester.
 
- * Version: 0.65.1
+ * Version: 0.66.0
 
  * Author:      RemarkablePC
 
@@ -1536,11 +1536,13 @@ class Formula_Evaluator {
 
 
 		// [message="..."] (no icon), [notice="..."] (info icon), [warning="..."] (warning icon)
-		$formula = preg_replace_callback( '/\[(message|notice|warning)\s*=\s*[\'"]([^\'"]+)[\'"]\]/i', function( $matches ) {
+		$formula = preg_replace_callback( '/\[(message|notice|warning)\s*=\s*[\'"]([^\'"]+)[\'"](?:\s+position\s*=\s*[\'"]([^\'"]+)[\'"])?\]/i', function( $matches ) {
 			if ( isset( $GLOBALS['formula_shipping_current_notices'] ) && is_array( $GLOBALS['formula_shipping_current_notices'] ) ) {
+				$pos = ! empty( $matches[3] ) ? strtolower( trim( $matches[3] ) ) : 'under_rate';
 				$GLOBALS['formula_shipping_current_notices'][] = array(
-					'type'    => strtolower( $matches[1] ),
-					'message' => trim( $matches[2] ),
+					'type'     => strtolower( $matches[1] ),
+					'message'  => trim( $matches[2] ),
+					'position' => $pos,
 				);
 			}
 			return '0';
@@ -8536,7 +8538,7 @@ function buildLocFormulaRow(idx, ship, hand, isEnabled, bgClass) {
 
 								});
 
-								formula = formula.replace(/\[(?:notice|message|warning)\s*=\s*['"][^'"]+['"]\]/gi, '0');
+								formula = formula.replace(/\[(?:notice|message|warning)\s*=\s*['"][^'"]+['"](?:\s+position\s*=\s*['"][^'"]+['"])?\]/gi, '0');
 								formula = formula.replace(/\[(?:fee|discount|sale)[^\]]*\]/gi, '0');
 
 
@@ -11248,15 +11250,43 @@ function buildLocFormulaRow(idx, ship, hand, isEnabled, bgClass) {
 
 
 								<details class="formula-help-accordion" style="margin-bottom: 12px; background: #ffffff; border: 1px solid #cbd5e1; border-radius: 8px; overflow: hidden;" open>
-									<summary style="padding: 12px 16px; font-weight: 700; font-size: 14px; color: #0f172a; background: #f8fafc; cursor: pointer; user-select: none;">💬 Dynamic Rate Notices & Alert Examples ([message="..."] / [notice="..."] / [warning="..."])</summary>
+									<summary style="padding: 12px 16px; font-weight: 700; font-size: 14px; color: #0f172a; background: #f8fafc; cursor: pointer; user-select: none;">💬 Dynamic Rate Notices, Alerts & Positioning ([message="..."] / [notice="..."] / [warning="..."])</summary>
 									<div style="padding: 16px; border-top: 1px solid #e2e8f0;">
-										<p style="margin: 0 0 8px 0;">Attach custom styled notice badges directly to shipping rate titles at checkout based on device, OS, browser, location, holiday, or sale conditions:</p>
-										<ul style="margin: 0; padding-left: 20px;">
-											<li><code>if([os] == "Linux", 0.00 + [message="Thanks for supporting open source!"], 5.00)</code> – Displays a blue 💬 Chat badge: <strong>Thanks for supporting open source!</strong></li>
-											<li><code>if([is_mobile], 2.99 + [notice="Mobile App Special Rate"], 5.99)</code> – Displays a green ℹ️ Info badge: <strong>Mobile App Special Rate</strong>.</li>
-											<li><code>if([is_international], 15.00 + [warning="Hazardous Materials Ground Shipping Only"], 5.00)</code> – Displays an amber ⚠️ Warning badge: <strong>Hazardous Materials Ground Shipping Only</strong>.</li>
-											<li><code>if([is_holiday="Christmas"], 0.00 + [message="Christmas Free Shipping Perk"], 7.50)</code> – Displays a blue 💬 Chat badge on Christmas Day.</li>
+										<p style="margin: 0 0 8px 0;">Attach custom styled notice badges to shipping rate titles or place them anywhere in WooCommerce using <code>position="..."</code>:</p>
+										<ul style="margin: 0 0 12px 0; padding-left: 20px;">
+											<li><code>if([os] == "Linux", 0.00 + [message="Thanks for supporting open source!"], 5.00)</code> – Displays a blue 💬 Chat badge under the rate.</li>
+											<li><code>if([is_mobile], 2.99 + [notice="Mobile App Special Rate"], 5.99)</code> – Displays a green ℹ️ Info badge under the rate.</li>
+											<li><code>if([is_international], 15.00 + [warning="Customs Delays Possible" position="top"], 5.00)</code> – Displays an amber ⚠️ Warning banner at the <strong>top of the checkout page</strong>.</li>
+											<li><code>[message="Free Shipping Unlocked!" position="cart_table"]</code> – Displays below the product list on the left side of the cart page.</li>
+											<li><code>[notice="All shipments insured" position="before_shipping"]</code> – Displays directly above the shipping options box.</li>
 										</ul>
+										<h5 style="margin: 12px 0 6px 0; font-size: 13px; color: #334155; font-weight: 700;">📍 Notice Position Options (<code>position="..."</code>)</h5>
+										<table style="width: 100%; border-collapse: collapse; font-size: 12px; border: 1px solid #e2e8f0;">
+											<tr style="background: #f8fafc; text-align: left;">
+												<th style="padding: 6px 10px; border: 1px solid #e2e8f0;">Position Value</th>
+												<th style="padding: 6px 10px; border: 1px solid #e2e8f0;">WooCommerce Location</th>
+											</tr>
+											<tr>
+												<td style="padding: 6px 10px; border: 1px solid #e2e8f0;"><code>under_rate</code> <em>(Default)</em></td>
+												<td style="padding: 6px 10px; border: 1px solid #e2e8f0;">Beneath the specific shipping rate option title</td>
+											</tr>
+											<tr>
+												<td style="padding: 6px 10px; border: 1px solid #e2e8f0;"><code>cart_table</code></td>
+												<td style="padding: 6px 10px; border: 1px solid #e2e8f0;">Below product items list on left column of cart page</td>
+											</tr>
+											<tr>
+												<td style="padding: 6px 10px; border: 1px solid #e2e8f0;"><code>before_shipping</code></td>
+												<td style="padding: 6px 10px; border: 1px solid #e2e8f0;">Directly above the shipping options box</td>
+											</tr>
+											<tr>
+												<td style="padding: 6px 10px; border: 1px solid #e2e8f0;"><code>after_shipping</code></td>
+												<td style="padding: 6px 10px; border: 1px solid #e2e8f0;">Directly below the shipping options box</td>
+											</tr>
+											<tr>
+												<td style="padding: 6px 10px; border: 1px solid #e2e8f0;"><code>top</code> / <code>global</code></td>
+												<td style="padding: 6px 10px; border: 1px solid #e2e8f0;">Global alert banner at very top of Cart & Checkout pages</td>
+											</tr>
+										</table>
 									</div>
 								</details>
 
@@ -12853,11 +12883,37 @@ if ( ! function_exists( 'formula_rate_shipping_render_rate_notice' ) ) {
 
 			}
 
+			$pos = isset( $entry['position'] ) ? strtolower( trim( $entry['position'] ) ) : 'under_rate';
+
+			if ( 'top' === $pos || 'global' === $pos ) {
+
+				if ( function_exists( 'wc_add_notice' ) ) {
+
+					wc_add_notice( $entry['message'], 'notice' );
+
+				}
+
+				continue;
+
+			}
+
+			if ( 'under_rate' !== $pos && '' !== $pos ) {
+
+				if ( ! isset( $GLOBALS['formula_shipping_positioned_notices'] ) ) {
+
+					$GLOBALS['formula_shipping_positioned_notices'] = array();
+
+				}
+
+				$GLOBALS['formula_shipping_positioned_notices'][] = $entry;
+
+				continue;
+
+			}
+
 			$type    = isset( $entry['type'] ) ? $entry['type'] : 'message';
 
 			$message = esc_html( $entry['message'] );
-
-
 
 			$bg_color     = '#f0f9ff';
 
@@ -12866,8 +12922,6 @@ if ( ! function_exists( 'formula_rate_shipping_render_rate_notice' ) ) {
 			$text_color   = '#0369a1';
 
 			$svg_icon     = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#0284c7" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>';
-
-
 
 			if ( 'notice' === $type ) {
 
@@ -12892,13 +12946,53 @@ if ( ! function_exists( 'formula_rate_shipping_render_rate_notice' ) ) {
 			}
 
 			echo '<div class="formula-rate-notice-badge formula-notice-' . esc_attr( $type ) . '" style="display:inline-flex;align-items:center;gap:6px;margin:6px 0 2px 24px;padding:4px 10px;border-radius:6px;font-size:12px;font-weight:500;line-height:1.4;background:' . $bg_color . ';border:1px solid ' . $border_color . ';color:' . $text_color . ';">' . $svg_icon . '<span>' . $message . '</span></div>';
+		}
+	}
+	add_action( 'woocommerce_after_shipping_rate', 'formula_rate_shipping_render_rate_notice', 10, 1 );
+}
 
+if ( ! function_exists( 'formula_rate_shipping_render_positioned_notices' ) ) {
+	function formula_rate_shipping_render_positioned_notices( $target_pos ) {
+		if ( empty( $GLOBALS['formula_shipping_positioned_notices'] ) || ! is_array( $GLOBALS['formula_shipping_positioned_notices'] ) ) {
+			return;
 		}
 
+		foreach ( $GLOBALS['formula_shipping_positioned_notices'] as $entry ) {
+			$pos = isset( $entry['position'] ) ? strtolower( trim( $entry['position'] ) ) : 'under_rate';
+			if ( $pos !== $target_pos ) {
+				continue;
+			}
+
+			$type    = isset( $entry['type'] ) ? $entry['type'] : 'message';
+			$message = esc_html( $entry['message'] );
+
+			$bg_color     = '#f0f9ff';
+			$border_color = '#bae6fd';
+			$text_color   = '#0369a1';
+			$svg_icon     = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#0284c7" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>';
+
+			if ( 'notice' === $type ) {
+				$bg_color     = '#f0fdf4';
+				$border_color = '#a7f3d0';
+				$text_color   = '#15803d';
+				$svg_icon     = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#059669" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>';
+			} elseif ( 'warning' === $type ) {
+				$bg_color     = '#fffbeb';
+				$border_color = '#fde68a';
+				$text_color   = '#b45309';
+				$svg_icon     = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#d97706" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>';
+			}
+
+			echo '<div class="formula-rate-notice-badge formula-notice-' . esc_attr( $type ) . '" style="display:inline-flex;align-items:center;gap:6px;margin:8px 0;padding:6px 12px;border-radius:6px;font-size:13px;font-weight:500;line-height:1.4;background:' . $bg_color . ';border:1px solid ' . $border_color . ';color:' . $text_color . ';">' . $svg_icon . '<span>' . $message . '</span></div>';
+		}
 	}
 
-	add_action( 'woocommerce_after_shipping_rate', 'formula_rate_shipping_render_rate_notice', 10, 1 );
-
+	add_action( 'woocommerce_cart_contents', function() { formula_rate_shipping_render_positioned_notices( 'cart_table' ); }, 20 );
+	add_action( 'woocommerce_cart_coupon', function() { formula_rate_shipping_render_positioned_notices( 'cart_table' ); }, 20 );
+	add_action( 'woocommerce_before_shipping_calculator', function() { formula_rate_shipping_render_positioned_notices( 'before_shipping' ); }, 10 );
+	add_action( 'woocommerce_cart_totals_before_shipping', function() { formula_rate_shipping_render_positioned_notices( 'before_shipping' ); }, 10 );
+	add_action( 'woocommerce_after_shipping_calculator', function() { formula_rate_shipping_render_positioned_notices( 'after_shipping' ); }, 10 );
+	add_action( 'woocommerce_cart_totals_after_shipping', function() { formula_rate_shipping_render_positioned_notices( 'after_shipping' ); }, 10 );
 }
 
 
