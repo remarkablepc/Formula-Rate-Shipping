@@ -8,7 +8,7 @@
 
  * Description: Calculate dynamic shipping and handling rates using custom formulas, priority item rules (Categories, Tags & Attributes), location overrides, and an interactive real-time tester.
 
- * Version: 0.67.1
+ * Version: 0.67.2
 
  * Author:      RemarkablePC
 
@@ -4646,11 +4646,11 @@ function formula_rate_shipping_init() {
 									<input type="url" name="formula_shipping_custom_ical_url" id="formula_custom_ical_url" value="<?php echo esc_attr( get_option( 'formula_shipping_custom_ical_url', '' ) ); ?>" placeholder="https://calendar.google.com/calendar/ical/.../public/basic.ics" style="width: 100%; font-size: 12px; margin-bottom: 8px;" />
 									
 									<label style="font-size: 11px; font-weight: 600; color: #475569; display: block; margin-bottom: 4px;">Calendar Event Filter Mode</label>
-									<select name="formula_shipping_custom_ical_filter" id="formula_custom_ical_filter" style="width: 100%; max-width: 100%; box-sizing: border-box; height: 36px; padding: 6px 28px 6px 10px; font-size: 12px; border: 1px solid #cbd5e1; border-radius: 4px; background: #ffffff;">
-										<option value="all_events" <?php selected( get_option( 'formula_shipping_custom_ical_filter', 'all_events' ), 'all_events' ); ?>>Use All Calendar Events (Any event today counts as a holiday)</option>
-										<option value="prefix_holiday" <?php selected( get_option( 'formula_shipping_custom_ical_filter' ), 'prefix_holiday' ); ?>>Filter by 'Holiday:' Prefix (Only events titled "Holiday: Festivus", "Holiday: Star Wars Day", etc.)</option>
+									<select name="formula_shipping_custom_ical_filter" id="formula_custom_ical_filter" style="width: 100%; max-width: 100%; box-sizing: border-box; height: 36px; padding: 6px 24px 6px 10px; font-size: 11px; border: 1px solid #cbd5e1; border-radius: 4px; background: #ffffff;">
+										<option value="all_events" <?php selected( get_option( 'formula_shipping_custom_ical_filter', 'all_events' ), 'all_events' ); ?>>Use All Calendar Events (All events count)</option>
+										<option value="prefix_holiday" <?php selected( get_option( 'formula_shipping_custom_ical_filter' ), 'prefix_holiday' ); ?>>Filter by 'Holiday:' Prefix (e.g. "Holiday: Festivus")</option>
 									</select>
-									<p class="description" style="margin: 4px 0 0; font-size: 11px; color: #64748b; line-height: 1.4;">Paste your public Google Calendar, Apple iCloud, or Outlook iCal (.ics) URL. When using 'Holiday:' prefix mode, events titled <code>Holiday: Festivus</code>, <code>Holiday: Star Wars Day</code>, or <code>Holiday: Summer Sale</code> evaluate <code>[holiday]</code> cleanly to <code>Festivus</code>, <code>Star Wars Day</code>, or <code>Summer Sale</code>.</p>
+									<p class="description" style="margin: 4px 0 0; font-size: 11px; color: #64748b; line-height: 1.4;">Paste your public Google Calendar, Apple iCloud, or Outlook iCal (.ics) URL. When using 'Holiday:' prefix mode, events titled <code>Holiday: Festivus</code>, <code>Holiday: First Contact Day</code> 🖖, or <code>Holiday: Star Wars Day</code> evaluate <code>[holiday]</code> cleanly to <code>Festivus</code>, <code>First Contact Day</code>, or <code>Star Wars Day</code>.</p>
 								</div>
 							</div>
 
