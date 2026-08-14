@@ -8,7 +8,7 @@
 
  * Description: Calculate dynamic shipping and handling rates using custom formulas, priority item rules (Categories, Tags & Attributes), location overrides, and an interactive real-time tester.
 
- * Version: 0.62.3
+ * Version: 0.62.4
 
  * Author:      RemarkablePC
 
@@ -5243,9 +5243,9 @@ function formula_rate_shipping_init() {
 
 											}
 
-											$country     = isset( $rule['country'] ) ? $rule['country'] : 'ALL';
+											$country     = isset( $rule['country'] ) ? $rule['country'] : '';
 
-											$state       = isset( $rule['state'] ) ? $rule['state'] : 'ALL';
+											$state       = isset( $rule['state'] ) ? $rule['state'] : '';
 
 											$location    = isset( $rule['location'] ) ? $rule['location'] : '';
 
@@ -5364,13 +5364,13 @@ function formula_rate_shipping_init() {
 																<div class="formula-loc-col formula-loc-col-country">
 																	<label class="formula-loc-col-label"><?php esc_html_e( 'Country', 'formula-rate-shipping' ); ?></label>
 																	<div class="formula-loc-country-wrap is-active">
-																		<input type="text" name="<?php echo esc_attr( $field_key ); ?>[<?php echo $index; ?>][country]" class="formula-loc-country-input formula-multi-suggest-input" value="<?php echo esc_attr( $country ); ?>" title="<?php esc_attr_e( 'Country', 'formula-rate-shipping' ); ?>" placeholder="US, CA, MX or ALL" />
+																		<input type="text" name="<?php echo esc_attr( $field_key ); ?>[<?php echo $index; ?>][country]" class="formula-loc-country-input" value="<?php echo esc_attr( $country ); ?>" title="<?php esc_attr_e( 'Country', 'formula-rate-shipping' ); ?>" placeholder="US, CA, MX or ALL" />
 																	</div>
 																</div>
 																<div class="formula-loc-col formula-loc-col-state" style="display: <?php echo $is_single_country ? 'block' : 'none'; ?>;">
 																	<label class="formula-loc-col-label"><?php esc_html_e( 'State', 'formula-rate-shipping' ); ?></label>
 																	<div class="formula-loc-state-wrap is-active">
-																		<input type="text" name="<?php echo esc_attr( $field_key ); ?>[<?php echo $index; ?>][state]" class="formula-loc-state-input formula-multi-suggest-input" value="<?php echo esc_attr( $state ); ?>" title="<?php esc_attr_e( 'State', 'formula-rate-shipping' ); ?>" placeholder="e.g. CA, NY, TX or ALL" <?php echo $is_single_country ? '' : 'disabled'; ?> />
+																		<input type="text" name="<?php echo esc_attr( $field_key ); ?>[<?php echo $index; ?>][state]" class="formula-loc-state-input" value="<?php echo esc_attr( $state ); ?>" title="<?php esc_attr_e( 'State', 'formula-rate-shipping' ); ?>" placeholder="e.g. CA, NY, TX or ALL" <?php echo $is_single_country ? '' : 'disabled'; ?> />
 																	</div>
 																</div>
 																<div class="formula-loc-col formula-loc-col-city">
@@ -5854,7 +5854,7 @@ function formula_rate_shipping_init() {
 							function buildLocMainRow(idx, ruleType, country, state, locPat, user, metaKey, metaValue, isEnabled, bgClass, deviceTarget, osTarget) {
 	ruleType = normalizeLocRuleType(ruleType || 'location');
 	isEnabled = (isEnabled !== false);
-	country = country || 'ALL';
+	country = country || '';
 	state = state || '';
 	var isSingleCountry = (country && typeof country === 'string' && /^[A-Z]{2}$/i.test(country.trim()) && country.trim().toUpperCase() !== 'ALL');
 
@@ -5864,10 +5864,10 @@ function formula_rate_shipping_init() {
 	var userConfig = getLocUserFieldConfig(ruleType);
 
 	return '<tr data-index="' + idx + '" class="formula-location-row-main ' + bgClass + (isEnabled ? '' : ' formula-rule-disabled') + '">' +
-		'<td style="text-align:center;vertical-align:middle;"><span class="rule-priority-badge">#' + (idx + 1) + '</span><input type="hidden" name="' + fieldKey + '[' + idx + '][enabled]" value="no" /><label class="formula-rule-switch" title="<?php echo esc_js( __( 'Enable this rule', 'formula-rate-shipping' ) ); ?>"><input type="checkbox" name="' + fieldKey + '[' + idx + '][enabled]" value="yes" class="formula-rule-enabled-toggle"' + (isEnabled ? ' checked' : '') + ' /><span class="formula-rule-switch-slider"></span></label></td>' +
-		'<td>' +
+		'<td style="text-align:center;vertical-align:bottom;padding-bottom:12px;"><span class="rule-priority-badge">#' + (idx + 1) + '</span><input type="hidden" name="' + fieldKey + '[' + idx + '][enabled]" value="no" /><label class="formula-rule-switch" title="<?php echo esc_js( __( 'Enable this rule', 'formula-rate-shipping' ) ); ?>"><input type="checkbox" name="' + fieldKey + '[' + idx + '][enabled]" value="yes" class="formula-rule-enabled-toggle"' + (isEnabled ? ' checked' : '') + ' /><span class="formula-rule-switch-slider"></span></label></td>' +
+		'<td style="vertical-align:bottom;padding-bottom:12px;">' +
 			'<input type="hidden" name="' + fieldKey + '[' + idx + '][rule_type]" class="formula-loc-rule-type-input" value="' + ruleType + '" />' +
-			'<select class="formula-loc-type-select">' +
+			'<select class="formula-loc-type-select" style="vertical-align:bottom;margin-bottom:0;">' +
 				'<option value="location"' + (ruleType === 'location' ? ' selected' : '') + '><?php echo esc_js( __( 'Location', 'formula-rate-shipping' ) ); ?></option>' +
 				'<option value="user_role"' + (ruleType === 'user_role' ? ' selected' : '') + '><?php echo esc_js( __( 'User Role', 'formula-rate-shipping' ) ); ?></option>' +
 				'<option value="user_login"' + (ruleType === 'user_login' ? ' selected' : '') + '><?php echo esc_js( __( 'User Login', 'formula-rate-shipping' ) ); ?></option>' +
@@ -5878,17 +5878,17 @@ function formula_rate_shipping_init() {
 				'<option value="browser"' + (ruleType === 'browser' ? ' selected' : '') + '><?php echo esc_js( __( 'Browser', 'formula-rate-shipping' ) ); ?></option>' +
 			'</select>' +
 		'</td>' +
-		'<td class="formula-location-target-cell">' +
+		'<td class="formula-location-target-cell" style="vertical-align:bottom;padding-bottom:12px;">' +
 			'<div class="loc-geo-fields" style="display:' + geoDisplay + ';">' +
 				'<div class="formula-mini-target-shell formula-mini-target-shell-location">' +
 					'<div class="formula-location-inline-fields formula-mini-target-grid formula-mini-target-grid-location" data-has-state="' + (isSingleCountry ? 'true' : 'false') + '">' +
 						'<div class="formula-loc-col formula-loc-col-country">' +
 							'<label class="formula-loc-col-label"><?php echo esc_js( __( 'Country', 'formula-rate-shipping' ) ); ?></label>' +
-							'<div class="formula-loc-country-wrap is-active"><input type="text" name="' + fieldKey + '[' + idx + '][country]" class="formula-loc-country-input formula-multi-suggest-input" value="' + $('<div>').text(country).html() + '" title="<?php echo esc_js( __( 'Country', 'formula-rate-shipping' ) ); ?>" placeholder="US, CA, MX or ALL" /></div>' +
+							'<div class="formula-loc-country-wrap is-active"><input type="text" name="' + fieldKey + '[' + idx + '][country]" class="formula-loc-country-input" value="' + $('<div>').text(country).html() + '" title="<?php echo esc_js( __( 'Country', 'formula-rate-shipping' ) ); ?>" placeholder="US, CA, MX or ALL" /></div>' +
 						'</div>' +
 						'<div class="formula-loc-col formula-loc-col-state" style="display:' + (isSingleCountry ? 'block' : 'none') + ';">' +
 							'<label class="formula-loc-col-label"><?php echo esc_js( __( 'State', 'formula-rate-shipping' ) ); ?></label>' +
-							'<div class="formula-loc-state-wrap is-active"><input type="text" name="' + fieldKey + '[' + idx + '][state]" class="formula-loc-state-input formula-multi-suggest-input" value="' + $('<div>').text(state).html() + '" title="<?php echo esc_js( __( 'State', 'formula-rate-shipping' ) ); ?>" placeholder="e.g. CA, NY, TX or ALL"' + (isSingleCountry ? '' : ' disabled') + ' /></div>' +
+							'<div class="formula-loc-state-wrap is-active"><input type="text" name="' + fieldKey + '[' + idx + '][state]" class="formula-loc-state-input" value="' + $('<div>').text(state).html() + '" title="<?php echo esc_js( __( 'State', 'formula-rate-shipping' ) ); ?>" placeholder="e.g. CA, NY, TX or ALL"' + (isSingleCountry ? '' : ' disabled') + ' /></div>' +
 						'</div>' +
 						'<div class="formula-loc-col formula-loc-col-city">' +
 							'<label class="formula-loc-col-label"><?php echo esc_js( __( 'City / ZIP / Pattern', 'formula-rate-shipping' ) ); ?></label>' +
@@ -13612,8 +13612,14 @@ if ( ! function_exists( 'formula_rate_shipping_inject_admin_css' ) ) {
 
 		}
 
-		.formula-mini-target-tabs {
-			display: none !important;
+		.formula-location-row-main td {
+			vertical-align: bottom !important;
+			padding-bottom: 12px !important;
+		}
+
+		select.formula-loc-type-select {
+			margin-bottom: 0 !important;
+			vertical-align: bottom !important;
 		}
 
 		.formula-mini-target-grid {
@@ -13655,10 +13661,12 @@ if ( ! function_exists( 'formula_rate_shipping_inject_admin_css' ) ) {
 
 		.formula-mini-target-grid-location {
 			grid-template-columns: 1fr 1fr !important;
+			width: 100% !important;
 		}
 
 		.formula-mini-target-grid-location[data-has-state="true"] {
-			grid-template-columns: minmax(130px, 150px) minmax(130px, 160px) 1fr !important;
+			grid-template-columns: 140px 150px 1fr !important;
+			width: 100% !important;
 		}
 
 		.formula-mini-target-grid-environment {
