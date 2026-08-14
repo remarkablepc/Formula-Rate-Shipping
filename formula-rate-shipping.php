@@ -8,7 +8,7 @@
 
  * Description: Calculate dynamic shipping and handling rates using custom formulas, priority item rules (Categories, Tags & Attributes), location overrides, and an interactive real-time tester.
 
- * Version: 0.62.4
+ * Version: 0.62.5
 
  * Author:      RemarkablePC
 
@@ -6324,7 +6324,7 @@ function buildLocFormulaRow(idx, ship, hand, isEnabled, bgClass) {
 
 											<th style="width: 65px; text-align: center;"><?php esc_html_e( 'Priority', 'formula-rate-shipping' ); ?></th>
 
-											<th style="width: 170px;"><?php esc_html_e( 'Type', 'formula-rate-shipping' ); ?></th>
+											<th style="width: 245px;"><?php esc_html_e( 'Type', 'formula-rate-shipping' ); ?></th>
 
 											<th><?php esc_html_e( 'Selection / Value *', 'formula-rate-shipping' ); ?></th>
 
@@ -12979,14 +12979,16 @@ select.formula-field-has-data {
 }
 
 /* WIDE SELECT DROPDOWNS FOR FULL TEXT VISIBILITY */
+select.formula-shipping-type-select,
 select.formula-rule-type-select,
 select.formula-loc-type-select,
 select[name*="[type]"] {
-	min-width: 215px !important;
-	max-width: 260px !important;
-	width: auto !important;
+	min-width: 235px !important;
+	max-width: 280px !important;
+	width: 100% !important;
 	font-size: 12px !important;
 	padding-right: 28px !important;
+	box-sizing: border-box !important;
 }
 
 /* TEST CART CATEGORY & VARIATION BOX SIZES */
@@ -13612,19 +13614,42 @@ if ( ! function_exists( 'formula_rate_shipping_inject_admin_css' ) ) {
 
 		}
 
-		.formula-location-row-main td {
-			vertical-align: bottom !important;
+		tr.formula-location-row-main td {
+			vertical-align: top !important;
+			padding-top: 10px !important;
 			padding-bottom: 12px !important;
 		}
 
-		select.formula-loc-type-select {
-			margin-bottom: 0 !important;
-			vertical-align: bottom !important;
+		tr.formula-location-row-main select.formula-loc-type-select {
+			margin-top: 20px !important;
+			vertical-align: top !important;
+			width: 100% !important;
+		}
+
+		select.formula-shipping-type-select,
+		select.formula-rule-type-select,
+		select.formula-loc-type-select,
+		select[name*="[type]"] {
+			min-width: 235px !important;
+			max-width: 280px !important;
+			width: 100% !important;
+			font-size: 12px !important;
+			padding-right: 28px !important;
+			box-sizing: border-box !important;
+		}
+
+		td.formula-location-target-cell,
+		.loc-geo-fields,
+		.formula-mini-target-shell-location,
+		.formula-location-inline-fields {
+			width: 100% !important;
+			max-width: 100% !important;
+			box-sizing: border-box !important;
 		}
 
 		.formula-mini-target-grid {
 			display: grid !important;
-			gap: 10px !important;
+			gap: 12px !important;
 			align-items: end !important;
 			width: 100% !important;
 		}
@@ -13662,11 +13687,13 @@ if ( ! function_exists( 'formula_rate_shipping_inject_admin_css' ) ) {
 		.formula-mini-target-grid-location {
 			grid-template-columns: 1fr 1fr !important;
 			width: 100% !important;
+			max-width: 100% !important;
 		}
 
 		.formula-mini-target-grid-location[data-has-state="true"] {
 			grid-template-columns: 140px 150px 1fr !important;
 			width: 100% !important;
+			max-width: 100% !important;
 		}
 
 		.formula-mini-target-grid-environment {
