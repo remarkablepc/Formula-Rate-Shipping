@@ -8,7 +8,7 @@
 
  * Description: Calculate dynamic shipping and handling rates using custom formulas, priority item rules (Categories, Tags & Attributes), location overrides, and an interactive real-time tester.
 
- * Version: 0.70.0
+ * Version: 0.70.1
 
  * Author:      RemarkablePC
 
@@ -4003,6 +4003,8 @@ function formula_rate_shipping_init() {
 
 		public $usa_default_handling_formula;
 
+		public $auto_validate_formulas;
+
 		public $usa_county_rules;
 
 		public $usa_item_rules;
@@ -4068,6 +4070,8 @@ function formula_rate_shipping_init() {
 			// Zone Settings (generic names, backward compatible with usa_* fallback)
 
 			$this->auto_inject                  = $this->get_option( 'auto_inject', 'yes' );
+
+			$this->auto_validate_formulas       = $this->get_option( 'auto_validate_formulas', 'yes' );
 
 			$this->applicable_countries         = $this->get_option( 'applicable_countries', $this->get_option( 'usa_countries', '' ) );
 
@@ -4463,7 +4467,7 @@ function formula_rate_shipping_init() {
 
 			$this->settings['auto_inject']                  = ( isset( $post_data[ $this->get_field_key( 'auto_inject' ) ] ) || isset( $_POST['auto_inject'] ) ) ? 'yes' : 'no';
 
-
+			$this->settings['auto_validate_formulas']       = ( isset( $post_data[ $this->get_field_key( 'auto_validate_formulas' ) ] ) || isset( $_POST['auto_validate_formulas'] ) ) ? 'yes' : 'no';
 
 			$this->settings['handling_combine']             = ( isset( $post_data[ $this->get_field_key( 'handling_combine' ) ] ) || isset( $_POST['handling_combine'] ) ) ? 'yes' : 'no';
 
@@ -4525,9 +4529,11 @@ function formula_rate_shipping_init() {
 
 			$title             = $this->get_option( 'title', __( 'Shipping and Handling', 'formula-rate-shipping' ) );
 
-			$auto_inject       = $this->get_option( 'auto_inject', 'yes' );
+			$auto_inject            = $this->get_option( 'auto_inject', 'yes' );
 
-			$handling_combine  = $this->get_option( 'handling_combine', 'yes' );
+			$auto_validate_formulas = $this->get_option( 'auto_validate_formulas', 'yes' );
+
+			$handling_combine       = $this->get_option( 'handling_combine', 'yes' );
 
 			$handling_title    = $this->get_option( 'handling_title', __( 'Handling Fee', 'formula-rate-shipping' ) );
 
@@ -4878,6 +4884,16 @@ function formula_rate_shipping_init() {
 
 									</div>
 
+								</div>
+
+								<div class="formula-field-group" style="margin-top: 14px; padding: 10px 12px; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 6px;">
+									<label for="<?php echo esc_attr( $this->get_field_key( 'auto_validate_formulas' ) ); ?>" style="display: flex; align-items: center; gap: 8px; font-weight: 600; font-size: 12px; color: #1e293b; cursor: pointer; margin: 0;">
+										<input type="checkbox" name="<?php echo esc_attr( $this->get_field_key( 'auto_validate_formulas' ) ); ?>" id="<?php echo esc_attr( $this->get_field_key( 'auto_validate_formulas' ) ); ?>" value="1" <?php checked( $auto_validate_formulas, 'yes' ); ?> style="margin: 0;" />
+										<?php esc_html_e( 'Auto-validate formulas on blur (when exiting formula field)', 'formula-rate-shipping' ); ?>
+									</label>
+									<p class="description" style="margin: 4px 0 0 20px; font-size: 11px; color: #64748b; line-height: 1.4;">
+										<?php esc_html_e( 'Automatically checks formula syntax when leaving the formula box. Formulas must pass validation before a rule can be enabled.', 'formula-rate-shipping' ); ?>
+									</p>
 								</div>
 
 								<?php echo $help_box_html; ?>
@@ -5476,8 +5492,6 @@ function formula_rate_shipping_init() {
 
 							</p>
 
-
-
 							<div class="formula-shipping-table-responsive">
 
 								<table class="widefat wc_input_table formula-shipping-rules-table" id="formula_shipping_rules_table_usa_county_rules">
@@ -5655,10 +5669,8 @@ function formula_rate_shipping_init() {
 																</div>
 															</div>
 														</div>
-													</div>
-
-													<div class="loc-user-fields" style="display: <?php echo esc_attr( $usr_display ); ?>;">
-														<input type="text" name="<?php echo esc_attr( $field_key ); ?>[<?php echo $index; ?>][user]" class="formula-loc-user-input<?php echo in_array( $rule_type, array( 'browser', 'device', 'os' ), true ) ? ' formula-multi-suggest-input' : ''; ?>" value="<?php echo esc_attr( $user ); ?>" title="<?php echo esc_attr( $user_title ); ?>" placeholder="<?php echo esc_attr( $user_placeholder ); ?>" />
+																							<div class="loc-user-fields" style="display: <?php echo esc_attr( $usr_display ); ?>;">
+														<input type="text" name="<?php echo esc_attr( $field_key ); ?>[<?php echo $index; ?>][user]" class="formula-loc-user-input" value="<?php echo esc_attr( $user ); ?>" title="<?php echo esc_attr( $user_title ); ?>" placeholder="<?php echo esc_attr( $user_placeholder ); ?>" />
 													</div>
 
 													<div class="loc-user-meta-fields" style="display: <?php echo esc_attr( $meta_display ); ?>;">
@@ -5773,11 +5785,11 @@ function formula_rate_shipping_init() {
 
 							var tableId = 'formula_shipping_rules_table_usa_county_rules';
 
-							var table = $('#' + tableId + ' tbody');
-
 							var fieldKey = '<?php echo esc_js( $field_key ); ?>';
 
-
+							function getTable() {
+								return $('#' + tableId + ' tbody');
+							}
 
 							function normalizeLocRuleType(ruleType) {
 
@@ -5790,8 +5802,6 @@ function formula_rate_shipping_init() {
 								return ruleType;
 
 							}
-
-
 
 							function getLocUserFieldConfig(ruleType) {
 
@@ -5827,7 +5837,7 @@ function formula_rate_shipping_init() {
 
 										title: '<?php echo esc_js( __( 'Browser Name', 'formula-rate-shipping' ) ); ?>',
 
-										placeholder: '<?php echo esc_js( __( 'Chrome, Firefox, Safari, Edge, Brave, Floorp, or any browser name', 'formula-rate-shipping' ) ); ?>'
+										placeholder: '<?php echo esc_js( __( 'Chrome, Firefox, Safari, Edge, Brave, etc.', 'formula-rate-shipping' ) ); ?>'
 
 									};
 
@@ -5851,7 +5861,7 @@ function formula_rate_shipping_init() {
 
 										title: '<?php echo esc_js( __( 'Operating System', 'formula-rate-shipping' ) ); ?>',
 
-										placeholder: '<?php echo esc_js( __( 'Windows, Linux, MacOS, iOS, Android, or any OS name', 'formula-rate-shipping' ) ); ?>'
+										placeholder: '<?php echo esc_js( __( 'Windows, Linux, MacOS, iOS, Android, etc.', 'formula-rate-shipping' ) ); ?>'
 
 									};
 
@@ -5861,13 +5871,11 @@ function formula_rate_shipping_init() {
 
 									title: '<?php echo esc_js( __( 'User Role', 'formula-rate-shipping' ) ); ?>',
 
-									placeholder: '<?php echo esc_js( __( 'subscriber, customer', 'formula-rate-shipping' ) ); ?>'
+									placeholder: '<?php echo esc_js( __( 'subscriber, customer, etc.', 'formula-rate-shipping' ) ); ?>'
 
 								};
 
 							}
-
-
 
 							function buildLocUserTargetField(index, ruleType, value, deviceValue, osValue) {
 
@@ -5875,33 +5883,19 @@ function formula_rate_shipping_init() {
 
 								if (ruleType === 'device_os') {
 
-									return '<div class="formula-mini-target-shell formula-mini-target-shell-environment">' +
+									return '<div class="formula-mini-target-grid formula-mini-target-grid-environment" style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">' +
 
-										'<div class="formula-mini-target-tabs">' +
+											'<input type="text" name="' + fieldKey + '[' + index + '][device_target]" class="formula-loc-device-input" value="' + $('<div>').text(deviceValue || '').html() + '" title="<?php echo esc_js( __( 'Device', 'formula-rate-shipping' ) ); ?>" placeholder="mobile, desktop, tablet or ALL" />' +
 
-											'<span class="formula-mini-target-tab is-active"><?php echo esc_js( __( 'Device', 'formula-rate-shipping' ) ); ?></span>' +
+											'<input type="text" name="' + fieldKey + '[' + index + '][os_target]" class="formula-loc-os-input" value="' + $('<div>').text(osValue || '').html() + '" title="<?php echo esc_js( __( 'Operating System', 'formula-rate-shipping' ) ); ?>" placeholder="Win10, Win11, Ventura, iOS, Android, Linux" />' +
 
-											'<span class="formula-mini-target-tab is-active"><?php echo esc_js( __( 'OS', 'formula-rate-shipping' ) ); ?></span>' +
-
-										'</div>' +
-
-										'<div class="formula-mini-target-grid formula-mini-target-grid-environment">' +
-
-											'<input type="text" name="' + fieldKey + '[' + index + '][device_target]" class="formula-loc-device-input formula-multi-suggest-input" value="' + $('<div>').text(deviceValue || '').html() + '" title="<?php echo esc_js( __( 'Device', 'formula-rate-shipping' ) ); ?>" placeholder="mobile, desktop, tablet or ALL" />' +
-
-											'<input type="text" name="' + fieldKey + '[' + index + '][os_target]" class="formula-loc-os-input formula-multi-suggest-input" value="' + $('<div>').text(osValue || '').html() + '" title="<?php echo esc_js( __( 'Operating System', 'formula-rate-shipping' ) ); ?>" placeholder="Win10, Win11, Ventura, iOS 17, Android 14, Linux" />' +
-
-										'</div>' +
-
-									'</div>';
+										'</div>';
 
 								}
 
-								return '<input type="text" name="' + fieldKey + '[' + index + '][user]" class="formula-loc-user-input' + (ruleType === 'browser' ? ' formula-multi-suggest-input' : '') + '" value="' + $('<div>').text(value || '').html() + '" title="' + config.title + '" placeholder="' + config.placeholder + '" />';
+								return '<input type="text" name="' + fieldKey + '[' + index + '][user]" class="formula-loc-user-input" value="' + $('<div>').text(value || '').html() + '" title="' + config.title + '" placeholder="' + config.placeholder + '" />';
 
 							}
-
-
 
 							function updateLocRuleTargetVisibility(mainRow) {
 
@@ -5955,53 +5949,129 @@ function formula_rate_shipping_init() {
 
 								updateLocStateVisibility(mainRow);
 
-								if (window.formulaEnsureChipEditors) {
+							}
 
-									window.formulaEnsureChipEditors();
+							window.normalizeCountryInputValue = function(rawText) {
+
+								if (!rawText || typeof rawText !== 'string') return 'ALL';
+
+								var clean = rawText.replace(/^['"]|['"]$/g, '').trim();
+
+								if (!clean || clean.toUpperCase() === 'ALL') return 'ALL';
+
+								if (clean.indexOf(',') !== -1 || clean.indexOf(';') !== -1) {
+
+									var parts = clean.split(/[,;]+/).map(function(p) { return window.normalizeCountryInputValue(p); }).filter(Boolean);
+
+									return parts.join(', ');
 
 								}
 
-							}
+								var upper = clean.toUpperCase();
 
+								if (upper === 'USA' || upper === 'UNITED STATES OF AMERICA' || upper === 'UNITED STATES') return 'US';
 
+								if (upper === 'UK' || upper === 'GREAT BRITAIN' || upper === 'UNITED KINGDOM') return 'GB';
+
+								var countries = window.formulaCountrySuggestions || [];
+
+								for (var i = 0; i < countries.length; i++) {
+
+									var c = countries[i];
+
+									if (c.value && c.value.toUpperCase() === upper) {
+
+										return c.value.toUpperCase();
+
+									}
+
+									var labelName = c.label.replace(/\s*\([A-Z0-9\-_]+\)\s*$/i, '').trim().toLowerCase();
+
+									if (labelName === clean.toLowerCase()) {
+
+										return c.value.toUpperCase();
+
+									}
+
+								}
+
+								return upper;
+
+							};
+
+							window.checkIsSingleCountryVal = function(val) {
+
+								if (!val || typeof val !== 'string') return false;
+
+								var norm = window.normalizeCountryInputValue(val);
+
+								if (!norm || norm === 'ALL') return false;
+
+								return (norm.indexOf(',') === -1 && norm.indexOf(';') === -1);
+
+							};
 
 							function checkIsSingleCountryVal(val) {
-								if (!val || typeof val !== 'string') return false;
-								var raw = val.trim();
-								var clean = raw.replace(/^['"]|['"]$/g, '').trim().toUpperCase();
-								if (!clean || clean === 'ALL') return false;
-								return (raw.indexOf(',') === -1 && raw.indexOf(';') === -1);
+
+								return window.checkIsSingleCountryVal(val);
+
 							}
 
 							function updateLocStateVisibility(mainRow) {
+
 								if (!mainRow || !mainRow.length) return;
+
 								var countryInput = mainRow.find('.formula-loc-country-input');
+
 								if (!countryInput.length) return;
+
 								var countryVal = String(countryInput.val() || '').trim();
+
 								var stateInput = mainRow.find('.formula-loc-state-input');
+
 								var grid       = mainRow.find('.formula-mini-target-grid-location');
-								var isSingleCountry = checkIsSingleCountryVal(countryVal);
+
+								var isSingleCountry = window.checkIsSingleCountryVal(countryVal);
 
 								if (isSingleCountry) {
+
 									stateInput.prop('disabled', false).attr('placeholder', 'e.g. CA, ON, NY or ALL');
+
 									grid.attr('data-has-state', 'true');
+
 								} else {
+
 									stateInput.prop('disabled', true).attr('placeholder', 'To Set State or Province Only One Country Must Be Selected');
+
 									grid.attr('data-has-state', 'false');
+
 								}
+
 							}
 
+							$(document.body).off('change input blur', '.formula-loc-country-input').on('change input blur', '.formula-loc-country-input', function(e) {
 
+								var input = $(this);
 
-							$(document.body).off('change input', '.formula-loc-country-input').on('change input', '.formula-loc-country-input', function() {
+								var mainRow = input.closest('tr.formula-location-row-main');
 
-								var mainRow = $(this).closest('tr.formula-location-row-main');
+								if (e.type === 'blur') {
+
+									var raw = input.val() || '';
+
+									var norm = window.normalizeCountryInputValue(raw);
+
+									if (norm && norm !== raw && raw.trim() !== '') {
+
+										input.val(norm);
+
+									}
+
+								}
 
 								updateLocStateVisibility(mainRow);
 
 							});
-
-
 
 							function updateLocationResolutionHelpText() {
 
@@ -6031,17 +6101,13 @@ function formula_rate_shipping_init() {
 
 							}
 
-
-
 							function updateLocationResolutionVisibility() {
 
-								var hasRules = table.find('tr.formula-location-row-main').length > 0;
+								var hasRules = getTable().find('tr.formula-location-row-main').length > 0;
 
 								$('#formula_location_resolution_controls, #formula_location_resolution_help_box').toggle(hasRules);
 
 							}
-
-
 
 							function syncLocationRuleEnabledState(mainRow) {
 
@@ -6055,11 +6121,9 @@ function formula_rate_shipping_init() {
 
 							}
 
-
-
 							function reindexLocationRulesTable() {
 
-								var mainRows = table.find('tr.formula-location-row-main');
+								var mainRows = getTable().find('tr.formula-location-row-main');
 
 								mainRows.each(function(idx) {
 
@@ -6068,8 +6132,6 @@ function formula_rate_shipping_init() {
 									var formulaRow = mainRow.next('tr.formula-location-row-formulas');
 
 									var bgClass = (idx % 2 === 0) ? 'formula-rule-bg-white' : 'formula-rule-bg-gray';
-
-
 
 									mainRow.attr('data-index', idx).removeClass('formula-rule-bg-white formula-rule-bg-gray').addClass(bgClass);
 
@@ -6113,70 +6175,121 @@ function formula_rate_shipping_init() {
 
 							}
 
-
-
 							function buildLocMainRow(idx, ruleType, country, state, locPat, user, metaKey, metaValue, isEnabled, bgClass, deviceTarget, osTarget) {
-	ruleType = normalizeLocRuleType(ruleType || 'location');
-	isEnabled = (isEnabled !== false);
-	country = country || '';
-	state = state || '';
-	var countryRaw = (country || '').trim();
-	var countryClean = countryRaw.replace(/^['"]|['"]$/g, '').trim().toUpperCase();
-	var isSingleCountry = (countryClean !== '' && countryClean !== 'ALL' && countryRaw.indexOf(',') === -1 && countryRaw.indexOf(';') === -1);
 
-	var geoDisplay  = (ruleType === 'location') ? 'block' : 'none';
-	var userDisplay = (ruleType !== 'location' && ruleType !== 'user_meta') ? 'block' : 'none';
-	var metaDisplay = (ruleType === 'user_meta') ? 'block' : 'none';
-	var userConfig = getLocUserFieldConfig(ruleType);
+								ruleType = normalizeLocRuleType(ruleType || 'location');
 
-	return '<tr data-index="' + idx + '" class="formula-location-row-main ' + bgClass + (isEnabled ? '' : ' formula-rule-disabled') + '">' +
-		'<td style="text-align:center;vertical-align:bottom;padding-bottom:12px;"><span class="rule-priority-badge">#' + (idx + 1) + '</span><input type="hidden" name="' + fieldKey + '[' + idx + '][enabled]" value="no" /><label class="formula-rule-switch" title="<?php echo esc_js( __( 'Enable this rule', 'formula-rate-shipping' ) ); ?>"><input type="checkbox" name="' + fieldKey + '[' + idx + '][enabled]" value="yes" class="formula-rule-enabled-toggle"' + (isEnabled ? ' checked' : '') + ' /><span class="formula-rule-switch-slider"></span></label></td>' +
-		'<td style="vertical-align:bottom;padding-bottom:12px;">' +
-			'<input type="hidden" name="' + fieldKey + '[' + idx + '][rule_type]" class="formula-loc-rule-type-input" value="' + ruleType + '" />' +
-			'<select class="formula-loc-type-select" style="vertical-align:bottom;margin-bottom:0;">' +
-				'<option value="location"' + (ruleType === 'location' ? ' selected' : '') + '><?php echo esc_js( __( 'Location', 'formula-rate-shipping' ) ); ?></option>' +
-				'<option value="user_role"' + (ruleType === 'user_role' ? ' selected' : '') + '><?php echo esc_js( __( 'User Role', 'formula-rate-shipping' ) ); ?></option>' +
-				'<option value="user_login"' + (ruleType === 'user_login' ? ' selected' : '') + '><?php echo esc_js( __( 'User Login', 'formula-rate-shipping' ) ); ?></option>' +
-				'<option value="user_email"' + (ruleType === 'user_email' ? ' selected' : '') + '><?php echo esc_js( __( 'User Email', 'formula-rate-shipping' ) ); ?></option>' +
-				'<option value="user_meta"' + (ruleType === 'user_meta' ? ' selected' : '') + '><?php echo esc_js( __( 'User Meta', 'formula-rate-shipping' ) ); ?></option>' +
-				'<option value="device"' + (ruleType === 'device' ? ' selected' : '') + '><?php echo esc_js( __( 'Device', 'formula-rate-shipping' ) ); ?></option>' +
-				'<option value="os"' + (ruleType === 'os' ? ' selected' : '') + '><?php echo esc_js( __( 'Operating System (OS)', 'formula-rate-shipping' ) ); ?></option>' +
-				'<option value="browser"' + (ruleType === 'browser' ? ' selected' : '') + '><?php echo esc_js( __( 'Browser', 'formula-rate-shipping' ) ); ?></option>' +
-			'</select>' +
-		'</td>' +
-		'<td class="formula-location-target-cell" style="vertical-align:bottom;padding-bottom:12px;">' +
-			'<div class="loc-geo-fields" style="display:' + geoDisplay + ';">' +
-				'<div class="formula-mini-target-shell formula-mini-target-shell-location">' +
-					'<div class="formula-location-inline-fields formula-mini-target-grid formula-mini-target-grid-location" data-has-state="' + (isSingleCountry ? 'true' : 'false') + '">' +
-						'<div class="formula-loc-col formula-loc-col-country">' +
-							'<label class="formula-loc-col-label"><?php echo esc_js( __( 'Country', 'formula-rate-shipping' ) ); ?></label>' +
-							'<div class="formula-loc-country-wrap is-active"><input type="text" name="' + fieldKey + '[' + idx + '][country]" class="formula-loc-country-input" value="' + $('<div>').text(country).html() + '" title="<?php echo esc_js( __( 'Country', 'formula-rate-shipping' ) ); ?>" placeholder="US, CA, MX or ALL" /></div>' +
-						'</div>' +
-						'<div class="formula-loc-col formula-loc-col-state" style="display:' + (isSingleCountry ? 'block' : 'none') + ';">' +
-							'<label class="formula-loc-col-label"><?php echo esc_js( __( 'State or Province', 'formula-rate-shipping' ) ); ?></label>' +
-							'<div class="formula-loc-state-wrap is-active"><input type="text" name="' + fieldKey + '[' + idx + '][state]" class="formula-loc-state-input" value="' + $('<div>').text(state).html() + '" title="<?php echo esc_js( __( 'State or Province', 'formula-rate-shipping' ) ); ?>" placeholder="e.g. CA, ON, NY or ALL"' + (isSingleCountry ? '' : ' disabled') + ' /></div>' +
-						'</div>' +
-						'<div class="formula-loc-col formula-loc-col-city">' +
-							'<label class="formula-loc-col-label"><?php echo esc_js( __( 'City / ZIP / Pattern', 'formula-rate-shipping' ) ); ?></label>' +
-							'<div class="formula-loc-city-wrap is-active"><input type="text" name="' + fieldKey + '[' + idx + '][location]" class="formula-loc-location-input" value="' + $('<div>').text(locPat).html() + '" title="<?php echo esc_js( __( 'City / ZIP / Pattern', 'formula-rate-shipping' ) ); ?>" placeholder="<?php echo esc_js( __( 'City, ZIP or pattern', 'formula-rate-shipping' ) ); ?>" /></div>' +
-						'</div>' +
-					'</div>' +
-				'</div>' +
-			'</div>' +
-			'<div class="loc-user-fields" style="display:' + userDisplay + ';">' +
-				buildLocUserTargetField(idx, ruleType, user, deviceTarget, osTarget) +
-			'</div>' +
-			'<div class="loc-user-meta-fields" style="display:' + metaDisplay + ';">' +
-				'<div class="formula-location-inline-fields" style="display:grid;grid-template-columns:1fr 1fr;gap:8px;align-items:center;">' +
-					'<input type="text" name="' + fieldKey + '[' + idx + '][user_meta_key]" value="' + $('<div>').text(metaKey || '').html() + '" title="<?php echo esc_js( __( 'User Meta Key', 'formula-rate-shipping' ) ); ?>" placeholder="membership_level" />' +
-					'<input type="text" name="' + fieldKey + '[' + idx + '][user_meta_value]" value="' + $('<div>').text(metaValue || '').html() + '" title="<?php echo esc_js( __( 'User Meta Value', 'formula-rate-shipping' ) ); ?>" placeholder="gold" />' +
-				'</div>' +
-			'</div>' +
-		'</td>' +
-	'</tr>';
-}
+								isEnabled = (isEnabled !== false);
 
-function buildLocFormulaRow(idx, ship, hand, isEnabled, bgClass) {
+								country = country || '';
+
+								state = state || '';
+
+								var countryRaw = (country || '').trim();
+
+								var countryClean = countryRaw.replace(/^['"]|['"]$/g, '').trim().toUpperCase();
+
+								var isSingleCountry = (countryClean !== '' && countryClean !== 'ALL' && countryRaw.indexOf(',') === -1 && countryRaw.indexOf(';') === -1);
+
+								var geoDisplay  = (ruleType === 'location') ? 'block' : 'none';
+
+								var userDisplay = (ruleType !== 'location' && ruleType !== 'user_meta') ? 'block' : 'none';
+
+								var metaDisplay = (ruleType === 'user_meta') ? 'block' : 'none';
+
+								return '<tr data-index="' + idx + '" class="formula-location-row-main ' + bgClass + (isEnabled ? '' : ' formula-rule-disabled') + '">' +
+
+									'<td style="text-align:center;vertical-align:bottom;padding-bottom:12px;"><span class="rule-priority-badge">#' + (idx + 1) + '</span><input type="hidden" name="' + fieldKey + '[' + idx + '][enabled]" value="no" /><label class="formula-rule-switch" title="<?php echo esc_js( __( 'Enable this rule', 'formula-rate-shipping' ) ); ?>"><input type="checkbox" name="' + fieldKey + '[' + idx + '][enabled]" value="yes" class="formula-rule-enabled-toggle"' + (isEnabled ? ' checked' : '') + ' /><span class="formula-rule-switch-slider"></span></label></td>' +
+
+									'<td style="vertical-align:bottom;padding-bottom:12px;">' +
+
+										'<input type="hidden" name="' + fieldKey + '[' + idx + '][rule_type]" class="formula-loc-rule-type-input" value="' + ruleType + '" />' +
+
+										'<select class="formula-loc-type-select" style="vertical-align:bottom;margin-bottom:0;">' +
+
+											'<option value="location"' + (ruleType === 'location' ? ' selected' : '') + '><?php echo esc_js( __( 'Location', 'formula-rate-shipping' ) ); ?></option>' +
+
+											'<option value="user_role"' + (ruleType === 'user_role' ? ' selected' : '') + '><?php echo esc_js( __( 'User Role', 'formula-rate-shipping' ) ); ?></option>' +
+
+											'<option value="user_login"' + (ruleType === 'user_login' ? ' selected' : '') + '><?php echo esc_js( __( 'User Login', 'formula-rate-shipping' ) ); ?></option>' +
+
+											'<option value="user_email"' + (ruleType === 'user_email' ? ' selected' : '') + '><?php echo esc_js( __( 'User Email', 'formula-rate-shipping' ) ); ?></option>' +
+
+											'<option value="user_meta"' + (ruleType === 'user_meta' ? ' selected' : '') + '><?php echo esc_js( __( 'User Meta', 'formula-rate-shipping' ) ); ?></option>' +
+
+											'<option value="device"' + (ruleType === 'device' ? ' selected' : '') + '><?php echo esc_js( __( 'Device', 'formula-rate-shipping' ) ); ?></option>' +
+
+											'<option value="os"' + (ruleType === 'os' ? ' selected' : '') + '><?php echo esc_js( __( 'Operating System (OS)', 'formula-rate-shipping' ) ); ?></option>' +
+
+											'<option value="browser"' + (ruleType === 'browser' ? ' selected' : '') + '><?php echo esc_js( __( 'Browser', 'formula-rate-shipping' ) ); ?></option>' +
+
+										'</select>' +
+
+									'</td>' +
+
+									'<td class="formula-location-target-cell" style="vertical-align:bottom;padding-bottom:12px;">' +
+
+										'<div class="loc-geo-fields" style="display:' + geoDisplay + ';">' +
+
+											'<div class="formula-mini-target-shell formula-mini-target-shell-location">' +
+
+												'<div class="formula-location-inline-fields formula-mini-target-grid formula-mini-target-grid-location" data-has-state="' + (isSingleCountry ? 'true' : 'false') + '">' +
+
+													'<div class="formula-loc-col formula-loc-col-country">' +
+
+														'<label class="formula-loc-col-label"><?php echo esc_js( __( 'Country', 'formula-rate-shipping' ) ); ?></label>' +
+
+														'<div class="formula-loc-country-wrap is-active"><input type="text" name="' + fieldKey + '[' + idx + '][country]" class="formula-loc-country-input" value="' + $('<div>').text(country).html() + '" title="<?php echo esc_js( __( 'Country', 'formula-rate-shipping' ) ); ?>" placeholder="US, CA, MX or ALL" /></div>' +
+
+													'</div>' +
+
+													'<div class="formula-loc-col formula-loc-col-state" style="display:' + (isSingleCountry ? 'block' : 'none') + ';">' +
+
+														'<label class="formula-loc-col-label"><?php echo esc_js( __( 'State or Province', 'formula-rate-shipping' ) ); ?></label>' +
+
+														'<div class="formula-loc-state-wrap is-active"><input type="text" name="' + fieldKey + '[' + idx + '][state]" class="formula-loc-state-input" value="' + $('<div>').text(state).html() + '" title="<?php echo esc_js( __( 'State or Province', 'formula-rate-shipping' ) ); ?>" placeholder="e.g. CA, ON, NY or ALL"' + (isSingleCountry ? '' : ' disabled') + ' /></div>' +
+
+													'</div>' +
+
+													'<div class="formula-loc-col formula-loc-col-city">' +
+
+														'<label class="formula-loc-col-label"><?php echo esc_js( __( 'City / ZIP / Pattern', 'formula-rate-shipping' ) ); ?></label>' +
+
+														'<div class="formula-loc-city-wrap is-active"><input type="text" name="' + fieldKey + '[' + idx + '][location]" class="formula-loc-location-input" value="' + $('<div>').text(locPat).html() + '" title="<?php echo esc_js( __( 'City / ZIP / Pattern', 'formula-rate-shipping' ) ); ?>" placeholder="<?php echo esc_js( __( 'City, ZIP or pattern', 'formula-rate-shipping' ) ); ?>" /></div>' +
+
+													'</div>' +
+
+												'</div>' +
+
+											'</div>' +
+
+										'</div>' +
+
+										'<div class="loc-user-fields" style="display:' + userDisplay + ';">' +
+
+											buildLocUserTargetField(idx, ruleType, user, deviceTarget, osTarget) +
+
+										'</div>' +
+
+										'<div class="loc-user-meta-fields" style="display:' + metaDisplay + ';">' +
+
+											'<div class="formula-location-inline-fields" style="display:grid;grid-template-columns:1fr 1fr;gap:8px;align-items:center;">' +
+
+												'<input type="text" name="' + fieldKey + '[' + idx + '][user_meta_key]" value="' + $('<div>').text(metaKey || '').html() + '" title="<?php echo esc_js( __( 'User Meta Key', 'formula-rate-shipping' ) ); ?>" placeholder="membership_level" />' +
+
+												'<input type="text" name="' + fieldKey + '[' + idx + '][user_meta_value]" value="' + $('<div>').text(metaValue || '').html() + '" title="<?php echo esc_js( __( 'User Meta Value', 'formula-rate-shipping' ) ); ?>" placeholder="gold" />' +
+
+											'</div>' +
+
+										'</div>' +
+
+									'</td>' +
+
+								'</tr>';
+
+							}
+
+							function buildLocFormulaRow(idx, ship, hand, isEnabled, bgClass) {
 
 								return '<tr data-index="' + idx + '" class="formula-location-row-formulas ' + bgClass + (isEnabled === false ? ' formula-rule-disabled' : '') + '">' +
 
@@ -6226,8 +6339,6 @@ function buildLocFormulaRow(idx, ship, hand, isEnabled, bgClass) {
 
 							}
 
-
-
 							$(document).off('change', '.formula-loc-type-select').on('change', '.formula-loc-type-select', function() {
 
 								var mainRow = $(this).closest('tr.formula-location-row-main');
@@ -6236,25 +6347,33 @@ function buildLocFormulaRow(idx, ship, hand, isEnabled, bgClass) {
 
 							});
 
-
-
 							$(document).off('change', '.formula-location-row-main .formula-rule-enabled-toggle').on('change', '.formula-location-row-main .formula-rule-enabled-toggle', function() {
 
-								syncLocationRuleEnabledState($(this).closest('tr.formula-location-row-main'));
+								var mainRow = $(this).closest('tr.formula-location-row-main');
+
+								var formulaRow = mainRow.next('tr.formula-location-row-formulas');
+
+								if (typeof window.handleFormulaRuleToggleWithValidation === 'function') {
+
+									window.handleFormulaRuleToggleWithValidation($(this), mainRow, formulaRow, syncLocationRuleEnabledState);
+
+								} else {
+
+									syncLocationRuleEnabledState(mainRow);
+
+								}
 
 							});
 
-
-
 							$(document).off('change', '#<?php echo esc_js( $this->get_field_key( "usa_location_rule_resolution" ) ); ?>').on('change', '#<?php echo esc_js( $this->get_field_key( "usa_location_rule_resolution" ) ); ?>', updateLocationResolutionHelpText);
-
-
 
 							$(document).off('click', '.formula-shipping-add-rule-btn-generic[data-target-table="' + tableId + '"]').on('click', '.formula-shipping-add-rule-btn-generic[data-target-table="' + tableId + '"]', function(e) {
 
 								e.preventDefault();
 
-								var index = table.find('tr.formula-location-row-main').length;
+								var tbody = getTable();
+
+								var index = tbody.find('tr.formula-location-row-main').length;
 
 								var bgClass = (index % 2 === 0) ? 'formula-rule-bg-white' : 'formula-rule-bg-gray';
 
@@ -6262,21 +6381,19 @@ function buildLocFormulaRow(idx, ship, hand, isEnabled, bgClass) {
 
 								var newFormulaRow = $(buildLocFormulaRow(index, '', '', true, bgClass));
 
-								table.append(newMainRow).append(newFormulaRow);
+								tbody.append(newMainRow).append(newFormulaRow);
 
 								updateLocStateVisibility(newMainRow);
 
 								reindexLocationRulesTable();
 
-								if (window.formulaEnsureChipEditors) {
+								if (typeof window.formulaInitAllFields === 'function') {
 
-									window.formulaEnsureChipEditors();
+									window.formulaInitAllFields();
 
 								}
 
 							});
-
-
 
 							$(document).off('click', '#' + tableId + ' .formula-shipping-move-up-rule').on('click', '#' + tableId + ' .formula-shipping-move-up-rule', function(e) {
 
@@ -6302,8 +6419,6 @@ function buildLocFormulaRow(idx, ship, hand, isEnabled, bgClass) {
 
 							});
 
-
-
 							$(document).off('click', '#' + tableId + ' .formula-shipping-move-down-rule').on('click', '#' + tableId + ' .formula-shipping-move-down-rule', function(e) {
 
 								e.preventDefault();
@@ -6327,8 +6442,6 @@ function buildLocFormulaRow(idx, ship, hand, isEnabled, bgClass) {
 								}
 
 							});
-
-
 
 							$(document).off('click', '#' + tableId + ' .formula-shipping-duplicate-rule').on('click', '#' + tableId + ' .formula-shipping-duplicate-rule', function(e) {
 
@@ -6376,15 +6489,13 @@ function buildLocFormulaRow(idx, ship, hand, isEnabled, bgClass) {
 
 								reindexLocationRulesTable();
 
-								if (window.formulaEnsureChipEditors) {
+								if (typeof window.formulaInitAllFields === 'function') {
 
-									window.formulaEnsureChipEditors();
+									window.formulaInitAllFields();
 
 								}
 
 							});
-
-
 
 							$(document).off('click', '#' + tableId + ' .formula-shipping-delete-rule').on('click', '#' + tableId + ' .formula-shipping-delete-rule', function(e) {
 
@@ -6402,15 +6513,13 @@ function buildLocFormulaRow(idx, ship, hand, isEnabled, bgClass) {
 
 							});
 
-
-
 							updateLocationResolutionHelpText();
 
 							updateLocationResolutionVisibility();
 
 							reindexLocationRulesTable();
 
-							table.find('tr.formula-location-row-main').each(function() {
+							getTable().find('tr.formula-location-row-main').each(function() {
 
 								updateLocRuleTargetVisibility($(this));
 
@@ -6795,20 +6904,17 @@ function buildLocFormulaRow(idx, ship, hand, isEnabled, bgClass) {
 							</div>
 
 						</div>
-
-					</div>
-
 					<script type="text/javascript">
 
 						(function($) {
 
 							var tableId = 'formula_shipping_rules_table_usa_item_rules';
 
-							var table = $('#' + tableId + ' tbody');
-
 							var fieldKey = '<?php echo esc_js( $field_key ); ?>';
 
-
+							function getTable() {
+								return $('#' + tableId + ' tbody');
+							}
 
 							function updateResolutionHelpText() {
 
@@ -6842,8 +6948,6 @@ function buildLocFormulaRow(idx, ship, hand, isEnabled, bgClass) {
 
 							updateResolutionHelpText();
 
-
-
 							function syncItemRuleEnabledState(mainRow) {
 
 								var formulaRow = mainRow.next('tr.formula-rule-row-formulas');
@@ -6856,11 +6960,9 @@ function buildLocFormulaRow(idx, ship, hand, isEnabled, bgClass) {
 
 							}
 
-
-
 							function reindexItemRulesTable() {
 
-								var mainRows = table.find('tr.formula-rule-row-main');
+								var mainRows = getTable().find('tr.formula-rule-row-main');
 
 								mainRows.each(function(idx) {
 
@@ -6869,8 +6971,6 @@ function buildLocFormulaRow(idx, ship, hand, isEnabled, bgClass) {
 									var formulaRow = mainRow.next('tr.formula-rule-row-formulas');
 
 									var bgClass = (idx % 2 === 0) ? 'formula-rule-bg-white' : 'formula-rule-bg-gray';
-
-									
 
 									mainRow.attr('data-index', idx).removeClass('formula-rule-bg-white formula-rule-bg-gray').addClass(bgClass);
 
@@ -6889,8 +6989,6 @@ function buildLocFormulaRow(idx, ship, hand, isEnabled, bgClass) {
 										}
 
 									});
-
-									
 
 									if (formulaRow.length) {
 
@@ -6916,15 +7014,17 @@ function buildLocFormulaRow(idx, ship, hand, isEnabled, bgClass) {
 
 								});
 
+								if (typeof window.formulaInitAllFields === 'function') {
+
+									window.formulaInitAllFields();
+
+								}
+
 							}
-
-
 
 							var categoryOptions = <?php echo json_encode( $category_options ); ?>;
 
 							var tagOptions = <?php echo json_encode( $tag_options ); ?>;
-
-
 
 							function updateRowTargetField(row, selectedType, currentValue) {
 
@@ -6932,13 +7032,9 @@ function buildLocFormulaRow(idx, ship, hand, isEnabled, bgClass) {
 
 								targetCell.empty();
 
-
-
 								var index = row.attr('data-index') || 0;
 
 								var inputName = fieldKey + '[' + index + '][target]';
-
-
 
 								if (selectedType === 'category') {
 
@@ -6986,8 +7082,6 @@ function buildLocFormulaRow(idx, ship, hand, isEnabled, bgClass) {
 
 							}
 
-
-
 							$(document).off('change', '.formula-shipping-type-select').on('change', '.formula-shipping-type-select', function() {
 
 								var row = $(this).closest('tr.formula-rule-row-main');
@@ -6998,25 +7092,35 @@ function buildLocFormulaRow(idx, ship, hand, isEnabled, bgClass) {
 
 							});
 
-
-
 							$(document).off('change', '.formula-rule-row-main .formula-rule-enabled-toggle').on('change', '.formula-rule-row-main .formula-rule-enabled-toggle', function() {
 
-								syncItemRuleEnabledState($(this).closest('tr.formula-rule-row-main'));
+								var mainRow = $(this).closest('tr.formula-rule-row-main');
+
+								var formulaRow = mainRow.next('tr.formula-rule-row-formulas');
+
+								if (typeof window.handleFormulaRuleToggleWithValidation === 'function') {
+
+									window.handleFormulaRuleToggleWithValidation($(this), mainRow, formulaRow, syncItemRuleEnabledState);
+
+								} else {
+
+									syncItemRuleEnabledState(mainRow);
+
+								}
 
 							});
-
-
 
 							$(document).off('click', '.formula-shipping-add-rule-btn-generic[data-target-table="' + tableId + '"]').on('click', '.formula-shipping-add-rule-btn-generic[data-target-table="' + tableId + '"]', function(e) {
 
 								e.preventDefault();
 
-								var index = table.find('tr.formula-rule-row-main').length;
+								var tbody = getTable();
 
-								var rowBg = (index % 2 === 0) ? '#ffffff' : '#f8fafc';
+								var index = tbody.find('tr.formula-rule-row-main').length;
 
-								var mainRowHtml = '<tr data-index="' + index + '" class="formula-rule-row-main">' +
+								var bgClass = (index % 2 === 0) ? 'formula-rule-bg-white' : 'formula-rule-bg-gray';
+
+								var mainRowHtml = '<tr data-index="' + index + '" class="formula-rule-row-main ' + bgClass + '">' +
 
 									'<td style="text-align: center; vertical-align: middle;"><span class="rule-priority-badge">#' + (index + 1) + '</span><input type="hidden" name="' + fieldKey + '[' + index + '][enabled]" value="no" /><label class="formula-rule-switch" title="<?php echo esc_js( __( 'Enable this rule', 'formula-rate-shipping' ) ); ?>"><input type="checkbox" name="' + fieldKey + '[' + index + '][enabled]" value="yes" class="formula-rule-enabled-toggle" checked /><span class="formula-rule-switch-slider"></span></label></td>' +
 
@@ -7054,7 +7158,7 @@ function buildLocFormulaRow(idx, ship, hand, isEnabled, bgClass) {
 
 								'</tr>';
 
-								var formulaRowHtml = '<tr data-index="' + index + '" class="formula-rule-row-formulas">' +
+								var formulaRowHtml = '<tr data-index="' + index + '" class="formula-rule-row-formulas ' + bgClass + '">' +
 
 									'<td colspan="4" style="padding: 6px 16px 16px 16px; border-bottom: 2px solid #e2e8f0;">' +
 
@@ -7082,17 +7186,21 @@ function buildLocFormulaRow(idx, ship, hand, isEnabled, bgClass) {
 
 								'</tr>';
 
-								table.append(mainRowHtml + formulaRowHtml);
+								tbody.append(mainRowHtml + formulaRowHtml);
 
-								var newRow = table.find('tr.formula-rule-row-main').last();
+								var newRow = tbody.find('tr.formula-rule-row-main').last();
 
 								updateRowTargetField(newRow, 'variation', 'Hardcover');
 
 								reindexItemRulesTable();
 
+								if (typeof window.formulaInitAllFields === 'function') {
+
+									window.formulaInitAllFields();
+
+								}
+
 							});
-
-
 
 							$(document).off('click', '#' + tableId + ' .formula-shipping-move-up-rule').on('click', '#' + tableId + ' .formula-shipping-move-up-rule', function(e) {
 
@@ -7118,8 +7226,6 @@ function buildLocFormulaRow(idx, ship, hand, isEnabled, bgClass) {
 
 							});
 
-
-
 							$(document).off('click', '#' + tableId + ' .formula-shipping-move-down-rule').on('click', '#' + tableId + ' .formula-shipping-move-down-rule', function(e) {
 
 								e.preventDefault();
@@ -7144,8 +7250,6 @@ function buildLocFormulaRow(idx, ship, hand, isEnabled, bgClass) {
 
 							});
 
-
-
 							$(document).off('click', '#' + tableId + ' .formula-shipping-duplicate-rule').on('click', '#' + tableId + ' .formula-shipping-duplicate-rule', function(e) {
 
 								e.preventDefault();
@@ -7153,8 +7257,6 @@ function buildLocFormulaRow(idx, ship, hand, isEnabled, bgClass) {
 								var mainRow = $(this).closest('tr.formula-rule-row-main');
 
 								var formulaRow = mainRow.next('tr.formula-rule-row-formulas');
-
-
 
 								var type = mainRow.find('select.formula-shipping-type-select').val() || 'category';
 
@@ -7165,8 +7267,6 @@ function buildLocFormulaRow(idx, ship, hand, isEnabled, bgClass) {
 								var shipF = formulaRow.length ? formulaRow.find('input[name*="[shipping_formula]"]').val() || '' : '';
 
 								var handF = formulaRow.length ? formulaRow.find('input[name*="[handling_formula]"]').val() || '' : '';
-
-
 
 								var dummyIndex = 999;
 
@@ -7208,8 +7308,6 @@ function buildLocFormulaRow(idx, ship, hand, isEnabled, bgClass) {
 
 								'</tr>';
 
-
-
 								var formulaRowHtml = '<tr data-index="' + dummyIndex + '" class="formula-rule-row-formulas">' +
 
 									'<td colspan="4" style="padding: 6px 16px 16px 16px; border-bottom: 2px solid #e2e8f0;">' +
@@ -7238,13 +7336,9 @@ function buildLocFormulaRow(idx, ship, hand, isEnabled, bgClass) {
 
 								'</tr>';
 
-
-
 								var newMainRow = $(mainRowHtml);
 
 								var newFormulaRow = $(formulaRowHtml);
-
-
 
 								if (formulaRow.length) {
 
@@ -7260,15 +7354,17 @@ function buildLocFormulaRow(idx, ship, hand, isEnabled, bgClass) {
 
 								}
 
-
-
 								updateRowTargetField(newMainRow, type, target);
 
 								reindexItemRulesTable();
 
+								if (typeof window.formulaInitAllFields === 'function') {
+
+									window.formulaInitAllFields();
+
+								}
+
 							});
-
-
 
 							$(document).off('click', '#' + tableId + ' .formula-shipping-delete-rule').on('click', '#' + tableId + ' .formula-shipping-delete-rule', function(e) {
 
@@ -7286,11 +7382,11 @@ function buildLocFormulaRow(idx, ship, hand, isEnabled, bgClass) {
 
 							});
 
-
-
 							reindexItemRulesTable();
 
 						})(jQuery);
+
+					</script>
 
 					</script>
 
@@ -7380,17 +7476,103 @@ function buildLocFormulaRow(idx, ship, hand, isEnabled, bgClass) {
 
 					}
 
+					$ship_formula = isset( $rule['shipping_formula'] ) ? sanitize_text_field( $rule['shipping_formula'] ) : '';
+
+					$hand_formula = isset( $rule['handling_formula'] ) ? sanitize_text_field( $rule['handling_formula'] ) : '';
+
+					$rule_enabled = ( 'no' === $enabled ) ? 'no' : 'yes';
+
+
+
+					// If rule is marked enabled, verify formula validity. If invalid, preserve formula text but force rule to disabled.
+
+					if ( 'yes' === $rule_enabled && class_exists( 'Formula_Evaluator' ) ) {
+
+						$sample_contents = array(
+
+							array(
+
+								'qty'        => 2,
+
+								'cost'       => 15.00,
+
+								'weight'     => 1.5,
+
+								'items'      => 1,
+
+								'category'   => 'sample',
+
+								'tag'        => 'sample',
+
+								'variation'  => 'Standard',
+
+								'sku'        => 'SKU-001',
+
+								'name'       => 'Sample Item',
+
+								'line_total' => 30.00,
+
+							),
+
+						);
+
+						$formula_error = '';
+
+						if ( '' !== trim( $ship_formula ) ) {
+
+							try {
+
+								Formula_Evaluator::evaluate( $ship_formula, $sample_contents );
+
+							} catch ( Exception $e ) {
+
+								$formula_error = $e->getMessage();
+
+							}
+
+						}
+
+						if ( '' === $formula_error && '' !== trim( $hand_formula ) ) {
+
+							try {
+
+								Formula_Evaluator::evaluate( $hand_formula, $sample_contents );
+
+							} catch ( Exception $e ) {
+
+								$formula_error = $e->getMessage();
+
+							}
+
+						}
+
+						if ( '' !== $formula_error ) {
+
+							$rule_enabled = 'no';
+
+							if ( class_exists( 'WC_Admin_Settings' ) ) {
+
+								WC_Admin_Settings::add_error( sprintf( __( 'Item Rule #%d was saved as disabled because its formula has a syntax error: %s', 'formula-rate-shipping' ), count( $sanitized_rules ) + 1, esc_html( $formula_error ) ) );
+
+							}
+
+						}
+
+					}
+
+
+
 					$sanitized_rules[] = array(
 
 						'type'             => $type,
 
 						'target'           => $target,
 
-						'enabled'          => 'no' === $enabled ? 'no' : 'yes',
+						'enabled'          => $rule_enabled,
 
-						'shipping_formula' => isset( $rule['shipping_formula'] ) ? sanitize_text_field( $rule['shipping_formula'] ) : '',
+						'shipping_formula' => $ship_formula,
 
-						'handling_formula' => isset( $rule['handling_formula'] ) ? sanitize_text_field( $rule['handling_formula'] ) : '',
+						'handling_formula' => $hand_formula,
 
 					);
 
@@ -7476,9 +7658,87 @@ function buildLocFormulaRow(idx, ship, hand, isEnabled, bgClass) {
 
 				foreach ( $rules as $rule ) {
 
-					$country       = isset( $rule['country'] ) ? sanitize_text_field( trim( strtoupper( $rule['country'] ) ) ) : 'ALL';
+					$raw_country   = isset( $rule['country'] ) ? sanitize_text_field( trim( (string) $rule['country'] ) ) : 'ALL';
 
-					$state         = isset( $rule['state'] ) ? sanitize_text_field( trim( strtoupper( $rule['state'] ) ) ) : 'ALL';
+					$country_clean = preg_replace( '/^[\'"]|[\'"]$/', '', $raw_country );
+
+					$country_clean = trim( $country_clean );
+
+					if ( '' === $country_clean || 'ALL' === strtoupper( $country_clean ) ) {
+
+						$country = 'ALL';
+
+					} else {
+
+						$country_lookup = array(
+
+							'usa'                      => 'US',
+
+							'united states'            => 'US',
+
+							'united states of america' => 'US',
+
+							'uk'                       => 'GB',
+
+							'great britain'            => 'GB',
+
+							'united kingdom'           => 'GB',
+
+						);
+
+						if ( function_exists( 'WC' ) && WC() && isset( WC()->countries ) && is_array( WC()->countries->countries ) ) {
+
+							foreach ( WC()->countries->countries as $c_code => $c_name ) {
+
+								$country_lookup[ strtolower( trim( (string) $c_name ) ) ] = strtoupper( (string) $c_code );
+
+								$country_lookup[ strtolower( trim( (string) $c_code ) ) ] = strtoupper( (string) $c_code );
+
+							}
+
+						}
+
+						$c_parts    = preg_split( '/[,;]+/', $country_clean );
+
+						$norm_parts = array();
+
+						foreach ( $c_parts as $cp ) {
+
+							$cp_clean = preg_replace( '/^[\'"]|[\'"]$/', '', trim( $cp ) );
+
+							$cp_lower = strtolower( $cp_clean );
+
+							if ( isset( $country_lookup[ $cp_lower ] ) ) {
+
+								$norm_parts[] = $country_lookup[ $cp_lower ];
+
+							} elseif ( '' !== $cp_clean ) {
+
+								$norm_parts[] = strtoupper( $cp_clean );
+
+							}
+
+						}
+
+						$norm_parts = array_unique( array_filter( $norm_parts ) );
+
+						$country    = ! empty( $norm_parts ) ? implode( ', ', $norm_parts ) : 'ALL';
+
+					}
+
+
+
+					$raw_state = isset( $rule['state'] ) ? sanitize_text_field( trim( (string) $rule['state'] ) ) : 'ALL';
+
+					$state     = preg_replace( '/^[\'"]|[\'"]$/', '', $raw_state );
+
+					$state     = trim( strtoupper( $state ) );
+
+					if ( '' === $state ) {
+
+						$state = 'ALL';
+
+					}
 
 					$location      = isset( $rule['location'] ) ? sanitize_text_field( trim( $rule['location'] ) ) : '';
 
@@ -7546,6 +7806,92 @@ function buildLocFormulaRow(idx, ship, hand, isEnabled, bgClass) {
 
 					}
 
+					$ship_formula = isset( $rule['shipping_formula'] ) ? sanitize_text_field( $rule['shipping_formula'] ) : '';
+
+					$hand_formula = isset( $rule['handling_formula'] ) ? sanitize_text_field( $rule['handling_formula'] ) : '';
+
+					$rule_enabled = ( 'no' === $enabled ) ? 'no' : 'yes';
+
+
+
+					// If rule is marked enabled, verify formula validity. If invalid, preserve formula text but force rule to disabled.
+
+					if ( 'yes' === $rule_enabled && class_exists( 'Formula_Evaluator' ) ) {
+
+						$sample_contents = array(
+
+							array(
+
+								'qty'        => 2,
+
+								'cost'       => 15.00,
+
+								'weight'     => 1.5,
+
+								'items'      => 1,
+
+								'category'   => 'sample',
+
+								'tag'        => 'sample',
+
+								'variation'  => 'Standard',
+
+								'sku'        => 'SKU-001',
+
+								'name'       => 'Sample Item',
+
+								'line_total' => 30.00,
+
+							),
+
+						);
+
+						$formula_error = '';
+
+						if ( '' !== trim( $ship_formula ) ) {
+
+							try {
+
+								Formula_Evaluator::evaluate( $ship_formula, $sample_contents );
+
+							} catch ( Exception $e ) {
+
+								$formula_error = $e->getMessage();
+
+							}
+
+						}
+
+						if ( '' === $formula_error && '' !== trim( $hand_formula ) ) {
+
+							try {
+
+								Formula_Evaluator::evaluate( $hand_formula, $sample_contents );
+
+							} catch ( Exception $e ) {
+
+								$formula_error = $e->getMessage();
+
+							}
+
+						}
+
+						if ( '' !== $formula_error ) {
+
+							$rule_enabled = 'no';
+
+							if ( class_exists( 'WC_Admin_Settings' ) ) {
+
+								WC_Admin_Settings::add_error( sprintf( __( 'Location Rule #%d was saved as disabled because its formula has a syntax error: %s', 'formula-rate-shipping' ), count( $sanitized_rules ) + 1, esc_html( $formula_error ) ) );
+
+							}
+
+						}
+
+					}
+
+
+
 					$sanitized_rules[] = array(
 
 						'rule_type'        => $rule_type_val,
@@ -7566,11 +7912,11 @@ function buildLocFormulaRow(idx, ship, hand, isEnabled, bgClass) {
 
 						'user_meta_value'  => $user_meta_value,
 
-						'enabled'          => 'no' === $enabled ? 'no' : 'yes',
+						'enabled'          => $rule_enabled,
 
-						'shipping_formula' => isset( $rule['shipping_formula'] ) ? sanitize_text_field( $rule['shipping_formula'] ) : '',
+						'shipping_formula' => $ship_formula,
 
-						'handling_formula' => isset( $rule['handling_formula'] ) ? sanitize_text_field( $rule['handling_formula'] ) : '',
+						'handling_formula' => $hand_formula,
 
 					);
 
@@ -13361,273 +13707,7 @@ if ( ! function_exists( 'formula_rate_shipping_inject_frontend_css' ) ) {
 
 			}
 
-		
-/* REMOVE DOUBLE NESTED CHIP BORDERS COMPLETELY */
-.formula-chip-field {
-	border: none !important;
-	box-shadow: none !important;
-	outline: none !important;
-	background: transparent !important;
-	border-radius: 0 !important;
-	padding: 0 !important;
-	margin: 0 !important;
-}
-
-.formula-chip-field .formula-chip-tag {
-	border-radius: 4px !important;
-	font-size: 11px !important;
-}
-
-/* VERTICAL ALIGNMENT OF DROPDOWN AND INPUT CONTAINERS */
-.formula-shipping-rules-table td,
-.formula-shipping-rules-table td > div {
-	vertical-align: middle !important;
-}
-
-.formula-mini-target-shell {
-	background: #f8fafc;
-	border: 1px solid #cbd5e1;
-	border-radius: 8px;
-	padding: 8px 12px;
-	display: flex;
-	flex-direction: column;
-	gap: 6px;
-	box-sizing: border-box;
-	vertical-align: middle !important;
-}
-
-/* SINGLE VISIBLE INPUT CONTAINER */
-.formula-mini-target-grid-location {
-	width: 100% !important;
-	box-sizing: border-box !important;
-}
-
-.formula-loc-country-wrap,
-.formula-loc-state-wrap,
-.formula-loc-city-wrap {
-	width: 100% !important;
-	box-sizing: border-box !important;
-}
-
-/* State and city hidden by default – JS shows the active one */
-.formula-loc-state-wrap,
-.formula-loc-city-wrap {
-	display: none;
-}
-
-.formula-mini-target-grid-location input[type="text"]:not(.formula-chip-editor) {
-	width: 100% !important;
-	box-sizing: border-box !important;
-	border: 1px solid #94a3b8 !important;
-	border-radius: 6px !important;
-	padding: 6px 10px !important;
-	font-size: 12px !important;
-	background: #ffffff;
-}
-
-/* TAB PILLS */
-.formula-mini-target-tabs {
-	display: flex;
-	align-items: center;
-	gap: 6px;
-	margin-bottom: 4px;
-}
-
-.formula-mini-target-tab {
-	display: inline-flex;
-	align-items: center;
-	padding: 3px 10px;
-	border-radius: 12px;
-	font-size: 11px;
-	font-weight: 600;
-	color: #64748b;
-	background: #e2e8f0;
-	cursor: pointer;
-	user-select: none;
-	transition: all 0.2s ease;
-}
-
-.formula-mini-target-tab:hover {
-	background: #cbd5e1;
-	color: #1e293b;
-}
-
-.formula-mini-target-tab.is-active {
-	background: #0284c7 !important;
-	color: #ffffff !important;
-	font-weight: 700 !important;
-}
-
-.formula-mini-target-tab.has-data {
-	background: #16a34a !important;
-	color: #ffffff !important;
-	font-weight: 700 !important;
-	box-shadow: 0 1px 3px rgba(22, 163, 74, 0.3) !important;
-}
-
-.formula-mini-target-tab.has-data::after {
-	content: " ●";
-	font-size: 9px;
-	margin-left: 3px;
-	color: #bbf7d0;
-}
-
-/* DISABLED STATE STYLING */
-.formula-mini-target-tab.formula-state-disabled {
-	opacity: 0.6 !important;
-	cursor: not-allowed !important;
-}
-
-input.formula-state-disabled,
-input:disabled {
-	background-color: #f1f5f9 !important;
-	color: #94a3b8 !important;
-	border-color: #cbd5e1 !important;
-	cursor: not-allowed !important;
-}
-
-/* INPUT WITH DATA (SOFT MINT) */
-input.formula-field-has-data,
-select.formula-field-has-data {
-	background-color: #f0fdf4 !important;
-	border-color: #86efac !important;
-	color: #14532d !important;
-}
-
-/* WIDE SELECT DROPDOWNS FOR FULL TEXT VISIBILITY */
-select.formula-shipping-type-select,
-select.formula-rule-type-select,
-select.formula-loc-type-select,
-select[name*="[type]"] {
-	min-width: 235px !important;
-	max-width: 280px !important;
-	width: 100% !important;
-	font-size: 12px !important;
-	padding-right: 28px !important;
-	box-sizing: border-box !important;
-}
-
-/* TEST CART CATEGORY & VARIATION BOX SIZES */
-.formula-sim-cart-table select.formula-sim-cat-select {
-	min-width: 260px !important;
-	flex: 1 1 auto !important;
-}
-
-.formula-sim-cart-table input.formula-sim-var-input {
-	max-width: 110px !important;
-	flex: 0 0 110px !important;
-}
-
-
-/* STRICT SINGLE VISIBLE INPUT CONTROL FOR LOCATION TARGET WRAPS */
-.formula-mini-target-tabs {
-	display: none !important;
-}
-
-.formula-loc-country-wrap,
-.formula-loc-state-wrap,
-.formula-loc-city-wrap {
-	width: 100% !important;
-	box-sizing: border-box !important;
-	display: block !important;
-}
-
-.formula-mini-target-grid-location {
-	width: 100% !important;
-	box-sizing: border-box !important;
-}
-
-.formula-mini-target-grid-location input[type="text"]:not(.formula-chip-editor) {
-	width: 100% !important;
-	box-sizing: border-box !important;
-	border: 1px solid #94a3b8 !important;
-	border-radius: 6px !important;
-	padding: 6px 10px !important;
-	font-size: 12px !important;
-	background: #ffffff;
-}
-
-/* TAB PILLS STYLING */
-.formula-mini-target-tabs {
-	display: flex;
-	align-items: center;
-	gap: 6px;
-	margin-bottom: 6px;
-}
-
-.formula-mini-target-tab {
-	display: inline-flex;
-	align-items: center;
-	padding: 3px 10px;
-	border-radius: 12px;
-	font-size: 11px;
-	font-weight: 600;
-	color: #64748b;
-	background: #e2e8f0;
-	cursor: pointer;
-	user-select: none;
-	transition: all 0.2s ease;
-}
-
-.formula-mini-target-tab:hover {
-	background: #cbd5e1;
-	color: #1e293b;
-}
-
-.formula-mini-target-tab.is-active {
-	background: #0284c7 !important;
-	color: #ffffff !important;
-	font-weight: 700 !important;
-}
-
-.formula-mini-target-tab.has-data {
-	background: #16a34a !important;
-	color: #ffffff !important;
-	font-weight: 700 !important;
-	box-shadow: 0 1px 3px rgba(22, 163, 74, 0.3) !important;
-}
-
-.formula-mini-target-tab.has-data::after {
-	content: " ●";
-	font-size: 9px;
-	margin-left: 3px;
-	color: #bbf7d0;
-}
-
-.formula-mini-target-tab.formula-state-disabled {
-	opacity: 0.5 !important;
-	cursor: not-allowed !important;
-}
-
-/* STRIP INNER DOUBLE ROUNDED BORDERS */
-.formula-chip-field {
-	border: none !important;
-	box-shadow: none !important;
-	outline: none !important;
-	background: transparent !important;
-	border-radius: 0 !important;
-	padding: 0 !important;
-	margin: 0 !important;
-}
-
-/* WIDE DROPDOWNS */
-select.formula-loc-type-select,
-select.formula-rule-type-select {
-	min-width: 215px !important;
-	max-width: 260px !important;
-	width: auto !important;
-	font-size: 12px !important;
-}
-
-.formula-sim-cart-table select.formula-sim-cat-select {
-	min-width: 260px !important;
-}
-
-.formula-sim-cart-table input.formula-sim-var-input {
-	max-width: 110px !important;
-}
-
-</style>
+		</style>
 
 		<?php
 
@@ -13941,292 +14021,177 @@ if ( ! function_exists( 'formula_rate_shipping_inject_admin_css' ) ) {
 
 
 
-		/* Autocomplete Suggestion Box Styling */
-
-		.formula-autocomplete-wrapper {
-
-			position: relative !important;
-
-			display: block !important;
-
-			width: 100% !important;
-
-		}
-
-		.formula-autocomplete-suggestions {
-
-			position: absolute !important;
-
-			top: 100% !important;
-
-			left: 0 !important;
-
-			right: 0 !important;
-
-			z-index: 999999 !important;
-
-			background: #ffffff !important;
-
-			border: 1px solid #94a3b8 !important;
-
-			border-radius: 6px !important;
-
-			box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15) !important;
-
-			max-height: 200px !important;
-
-			overflow-y: auto !important;
-
-			margin-top: 4px !important;
-
-			padding: 4px 0 !important;
-
-			list-style: none !important;
-
-		}
-
-		.formula-autocomplete-item {
-
-			padding: 8px 12px !important;
-
-			font-size: 12px !important;
-
-			color: #1e293b !important;
-
-			cursor: pointer !important;
-
-			transition: background-color 0.15s ease !important;
-
-			display: flex !important;
-
-			align-items: center !important;
-
-			justify-content: space-between !important;
-
-		}
-
-		.formula-autocomplete-item:hover,
-
-		.formula-autocomplete-item.is-selected {
-
-			background-color: #f1f5f9 !important;
-
-			color: #0284c7 !important;
-
-			font-weight: 600 !important;
-
-		}
-
-		.formula-autocomplete-item .item-badge {
-
-			font-size: 10px !important;
-
-			background: #e2e8f0 !important;
-
-			color: #475569 !important;
-
-			padding: 2px 6px !important;
-
-			border-radius: 4px !important;
-
-			font-weight: 500 !important;
-
-		}
-
-		.formula-chip-source-input {
-
-			display: none !important;
-
-		}
-
-		.formula-chip-field {
-
-			display: flex !important;
-
-			align-items: center !important;
-
-			gap: 6px !important;
-
-			flex-wrap: nowrap !important;
-
-			width: 100% !important;
-
-			height: 38px !important;
-
-			min-height: 38px !important;
-
-			max-height: 38px !important;
-
-			padding: 2px 6px !important;
-
-			border: 1px solid #94a3b8 !important;
-
-			border-radius: 6px !important;
-
-			background: #ffffff !important;
-
-			box-sizing: border-box !important;
-
-			overflow-x: auto !important;
-
-			overflow-y: hidden !important;
-
-		}
-
-		.formula-mini-target-shell {
-
-			display: flex !important;
-
-			flex-direction: column !important;
-
-			gap: 6px !important;
-
-			width: 100% !important;
-
-		}
-
-		.formula-mini-target-tabs {
-
-			display: flex !important;
-
-			gap: 6px !important;
-
-			flex-wrap: wrap !important;
-
-		}
-
-		.formula-mini-target-tab {
-
-			display: inline-flex !important;
-
-			align-items: center !important;
-
-			padding: 2px 8px !important;
-
-			border-radius: 999px !important;
-
-			border: 1px solid #cbd5e1 !important;
-
-			background: #f8fafc !important;
-
-			color: #64748b !important;
-
-			font-size: 11px !important;
-
-			font-weight: 600 !important;
-
-			line-height: 1.4 !important;
-
-		}
-
-		.formula-mini-target-tab.is-active {
-
-			border-color: #7dd3fc !important;
-
-			background: #e0f2fe !important;
-
-			color: #075985 !important;
-
-		}
+		/* Target Fields & Rule Table Layout */
 
 		tr.formula-location-row-main td {
+
 			vertical-align: top !important;
+
 			padding-top: 10px !important;
+
 			padding-bottom: 12px !important;
+
 		}
 
 		tr.formula-location-row-main select.formula-loc-type-select {
+
 			margin-top: 17px !important;
+
 			vertical-align: top !important;
+
 			width: 100% !important;
+
 		}
 
 		select.formula-shipping-type-select,
+
 		select.formula-rule-type-select,
+
 		select.formula-loc-type-select,
+
 		select[name*="[type]"] {
+
 			min-width: 235px !important;
+
 			max-width: 280px !important;
+
 			width: 100% !important;
+
 			font-size: 12px !important;
+
 			padding-right: 28px !important;
+
 			box-sizing: border-box !important;
+
 		}
 
 		td.formula-location-target-cell,
+
 		.loc-geo-fields,
+
 		.formula-mini-target-shell-location,
+
 		.formula-location-inline-fields {
+
 			width: 100% !important;
+
 			max-width: 100% !important;
+
 			box-sizing: border-box !important;
+
 			display: block !important;
+
 			flex: 1 1 100% !important;
+
 		}
 
 		.formula-mini-target-grid {
+
 			display: grid !important;
+
 			gap: 12px !important;
+
 			align-items: end !important;
+
 			width: 100% !important;
+
 			max-width: 100% !important;
+
 			box-sizing: border-box !important;
+
 		}
 
 		.formula-loc-col {
+
 			display: flex;
+
 			flex-direction: column;
+
 			align-items: flex-start;
+
 			text-align: left;
+
 			min-width: 0;
+
 			width: 100%;
+
 			max-width: 100%;
+
 		}
 
 		.formula-loc-col-city,
+
 		.formula-loc-city-wrap,
+
 		input.formula-loc-location-input {
+
 			width: 100% !important;
+
 			max-width: 100% !important;
+
 			box-sizing: border-box !important;
+
 			flex: 1 1 100% !important;
+
 		}
 
 		.formula-loc-col-state {
+
 			display: none !important;
+
 		}
 
 		.formula-mini-target-grid-location[data-has-state="true"] .formula-loc-col-state {
+
 			display: flex !important;
+
 		}
 
 		.formula-loc-col-label {
+
 			display: block !important;
+
 			text-align: left !important;
+
 			float: none !important;
+
 			margin: 0 0 4px 0 !important;
+
 			font-size: 11px !important;
+
 			font-weight: 600 !important;
+
 			color: #475569 !important;
+
 			line-height: 1.2 !important;
+
 			white-space: nowrap !important;
+
 			width: 100% !important;
+
 		}
 
 		.formula-mini-target-grid-location {
+
 			display: grid !important;
+
 			grid-template-columns: 140px 1fr !important;
+
 			width: 100% !important;
+
 			max-width: 100% !important;
+
 			box-sizing: border-box !important;
+
 		}
 
 		.formula-mini-target-grid-location[data-has-state="true"] {
+
 			display: grid !important;
+
 			grid-template-columns: 140px 150px 1fr !important;
-			width: 100% !important;
-			max-width: 100% !important;
-			box-sizing: border-box !important;
+
+
 		}
 
 		.formula-mini-target-grid-environment {
@@ -14235,151 +14200,80 @@ if ( ! function_exists( 'formula_rate_shipping_inject_admin_css' ) ) {
 
 		}
 
-		.formula-chip-field:focus-within {
 
-			border-color: #0284c7 !important;
-
-			box-shadow: 0 0 0 1px rgba(2, 132, 199, 0.16) !important;
-
+		/* 3-State Formula Validator UI */
+		.formula-validation-inline {
+			display: flex;
+			align-items: center;
+			flex-wrap: wrap;
+			gap: 6px;
+			margin-top: 5px;
+			font-size: 11px;
+			line-height: 1.4;
+			text-align: left;
 		}
 
-		.formula-chip-field.formula-has-error {
-
-			border-color: #dc2626 !important;
-
-			box-shadow: 0 0 0 1px rgba(220, 38, 38, 0.12) !important;
-
+		.formula-val-badge {
+			display: inline-flex;
+			align-items: center;
+			gap: 3px;
+			padding: 2px 8px;
+			border-radius: 9999px;
+			font-size: 10px;
+			font-weight: 600;
+			letter-spacing: 0.02em;
+			transition: all 0.2s ease;
 		}
 
-		.formula-chip-list {
-
-			display: flex !important;
-
-			flex-wrap: nowrap !important;
-
-			gap: 6px !important;
-
-			align-items: center !important;
-
-			flex: 0 1 auto !important;
-
-			min-width: 0 !important;
-
+		.formula-val-badge.is-valid {
+			background: #ecfdf5;
+			color: #15803d;
+			border: 1px solid #a7f3d0;
 		}
 
-		.formula-chip-token {
-
-			display: inline-flex !important;
-
-			align-items: center !important;
-
-			gap: 6px !important;
-
-			padding: 3px 8px !important;
-
-			border-radius: 999px !important;
-
-			background: #e0f2fe !important;
-
-			border: 1px solid #bae6fd !important;
-
-			color: #075985 !important;
-
-			font-size: 12px !important;
-
-			font-weight: 600 !important;
-
-			line-height: 1.2 !important;
-
-			white-space: nowrap !important;
-
-			flex-shrink: 0 !important;
-
+		.formula-val-badge.is-unverified {
+			background: #fffbeb;
+			color: #b45309;
+			border: 1px solid #fde68a;
 		}
 
-		.formula-chip-remove {
-
-			appearance: none !important;
-
-			border: 0 !important;
-
-			background: transparent !important;
-
-			color: #0369a1 !important;
-
-			cursor: pointer !important;
-
-			font-size: 14px !important;
-
-			line-height: 1 !important;
-
-			padding: 0 !important;
-
+		.formula-val-badge.is-pending {
+			background: #fefce8;
+			color: #a16207;
+			border: 1px solid #fef08a;
 		}
 
-		.formula-chip-remove:hover {
-
-			color: #b91c1c !important;
-
+		.formula-val-badge.is-error {
+			background: #fef2f2;
+			color: #b91c1c;
+			border: 1px solid #fecaca;
 		}
 
-		.formula-chip-editor-wrap {
-
-			flex: 1 1 50px !important;
-
-			min-width: 30px !important;
-
+		.formula-val-msg {
+			font-size: 11px;
+			color: #b91c1c;
+			font-weight: 500;
+			line-height: 1.4;
+			word-break: break-word;
 		}
 
-		.formula-chip-editor,
-		.formula-chip-field input,
-		.formula-chip-field input[type="text"],
-		.formula-chip-field input.formula-chip-editor,
-		.formula-chip-editor-wrap input,
-		.formula-chip-editor-wrap input[type="text"],
-		.formula-shipping-rules-table .formula-chip-field input,
-		.formula-shipping-rules-table .formula-chip-field input[type="text"],
-		.formula-shipping-rules-table input.formula-chip-editor,
-		.formula-mini-target-shell .formula-chip-field input,
-		.formula-mini-target-shell .formula-chip-field input[type="text"],
-		.formula-mini-target-grid-location .formula-chip-field input,
-		.formula-mini-target-grid-location .formula-chip-field input[type="text"],
-		table.formula-shipping-rules-table td .formula-chip-field input[type="text"],
-		table.wc_input_table td .formula-chip-field input[type="text"] {
-			width: 100% !important;
-			height: 26px !important;
-			min-height: 26px !important;
-			max-height: 26px !important;
-			padding: 0 4px !important;
-			border: 0 !important;
-			border-style: none !important;
-			box-shadow: none !important;
-			outline: none !important;
-			background: transparent !important;
-			line-height: 24px !important;
-			margin: 0 !important;
+		.formula-val-btn {
+			display: inline-flex;
+			align-items: center;
+			background: none;
+			border: none;
+			padding: 0 4px;
+			margin: 0;
+			font-size: 11px;
+			color: #0284c7;
+			cursor: pointer;
+			text-decoration: underline;
+			font-weight: 600;
 		}
 
-		.formula-chip-editor:focus,
-		.formula-chip-field input:focus,
-		.formula-chip-field input[type="text"]:focus,
-		.formula-chip-field input.formula-chip-editor:focus,
-		.formula-chip-editor-wrap input:focus,
-		.formula-chip-editor-wrap input[type="text"]:focus,
-		.formula-shipping-rules-table .formula-chip-field input:focus,
-		.formula-shipping-rules-table .formula-chip-field input[type="text"]:focus,
-		.formula-shipping-rules-table input.formula-chip-editor:focus,
-		.formula-mini-target-shell .formula-chip-field input:focus,
-		.formula-mini-target-shell .formula-chip-field input[type="text"]:focus,
-		.formula-mini-target-grid-location .formula-chip-field input:focus,
-		.formula-mini-target-grid-location .formula-chip-field input[type="text"]:focus,
-		table.formula-shipping-rules-table td .formula-chip-field input[type="text"]:focus,
-		table.wc_input_table td .formula-chip-field input[type="text"]:focus {
-			border: 0 !important;
-			border-style: none !important;
-			box-shadow: none !important;
-			outline: none !important;
-			background: transparent !important;
+		.formula-val-btn:hover {
+			color: #0369a1;
+			text-decoration: none;
 		}
 
 		.formula-formula-error {
@@ -14414,7 +14308,19 @@ if ( ! function_exists( 'formula_rate_shipping_inject_admin_css' ) ) {
 
 			border-color: #dc2626 !important;
 
-			box-shadow: 0 0 0 1px rgba(220, 38, 38, 0.12) !important;
+			box-shadow: 0 0 0 1px rgba(220, 38, 38, 0.15) !important;
+
+		}
+
+		.formula-input-valid {
+
+			border-color: #10b981 !important;
+
+		}
+
+		.formula-input-unverified {
+
+			border-color: #f59e0b !important;
 
 		}
 
@@ -15208,7 +15114,7 @@ if ( ! function_exists( 'formula_rate_shipping_inject_admin_css' ) ) {
 
 		.formula-shipping-rules-table select,
 
-		.formula-shipping-rules-table input[type="text"]:not(.formula-chip-editor) {
+		.formula-shipping-rules-table input[type="text"] {
 
 			width: 100% !important;
 
@@ -15216,7 +15122,7 @@ if ( ! function_exists( 'formula_rate_shipping_inject_admin_css' ) ) {
 
 			padding: 0 12px !important;
 
-			border: 1px solid #94a3b8 !important; /* Higher contrast border */
+			border: 1px solid #94a3b8 !important;
 
 			border-radius: 6px !important;
 
@@ -15229,21 +15135,9 @@ if ( ! function_exists( 'formula_rate_shipping_inject_admin_css' ) ) {
 			color: #334155 !important;
 
 			margin: 0 !important;
-
 			vertical-align: middle !important;
-
 		}
 
-		/* ENFORCE NO INNER BORDER ON CHIP EDITORS IN RULES TABLE */
-		.formula-shipping-rules-table .formula-chip-field input,
-		.formula-shipping-rules-table .formula-chip-field input[type="text"],
-		.formula-shipping-rules-table input.formula-chip-editor {
-			border: 0 !important;
-			border-style: none !important;
-			box-shadow: none !important;
-			outline: none !important;
-			background: transparent !important;
-		}
 
 	</style>
 
@@ -15338,13 +15232,9 @@ if ( ! function_exists( 'formula_rate_shipping_inject_admin_css' ) ) {
 				}
 			}
 
-			$(document.body).on('input change blur keyup', '.formula-loc-country-input, .formula-chip-editor', function() {
+			$(document.body).on('input change blur keyup', '.formula-loc-country-input', function() {
 				var input = $(this);
 				var mainRow = input.closest('tr.formula-location-row-main');
-				if (!mainRow.length && input.hasClass('formula-chip-editor')) {
-					var sourceInput = getFormulaChipSourceInput(input);
-					mainRow = sourceInput.closest('tr.formula-location-row-main');
-				}
 				if (mainRow.length) {
 					updateLocStateVisibility(mainRow);
 				}
@@ -15564,11 +15454,11 @@ if ( ! function_exists( 'formula_rate_shipping_inject_admin_css' ) ) {
 
 				setTimeout(toggleSettingsVisibility, 100);
 
-				setTimeout(ensureFormulaChipEditors, 100);
-
 				setTimeout(initializeFormulaSimulator, 100);
 
 				setTimeout(updateDynamicSummaries, 100);
+
+				setTimeout(initAllFormulaValidationFields, 100);
 
 				$(document).off('click', '.formula-help-toggle-btn').on('click', '.formula-help-toggle-btn', function(e) {
 
@@ -15586,7 +15476,7 @@ if ( ! function_exists( 'formula_rate_shipping_inject_admin_css' ) ) {
 
 				var requestData = settings && settings.data ? String(settings.data) : '';
 
-				if (/action=formula_shipping_(validate_formula|search_targets)/.test(requestData)) {
+				if (/action=formula_shipping_(validate_formula)/.test(requestData)) {
 
 					return;
 
@@ -15594,11 +15484,11 @@ if ( ! function_exists( 'formula_rate_shipping_inject_admin_css' ) ) {
 
 				setTimeout(toggleSettingsVisibility, 100);
 
-				setTimeout(ensureFormulaChipEditors, 100);
-
 				setTimeout(initializeFormulaSimulator, 100);
 
 				setTimeout(updateDynamicSummaries, 100);
+
+				setTimeout(initAllFormulaValidationFields, 100);
 
 			});
 
@@ -15642,236 +15532,6 @@ if ( ! function_exists( 'formula_rate_shipping_inject_admin_css' ) ) {
 
 
 
-			if (window.MutationObserver) {
-
-				new MutationObserver(function() {
-
-					if ($('.wc-backbone-modal-content').length) {
-
-						ensureFormulaChipEditors();
-
-						initializeFormulaSimulator();
-
-					}
-
-				}).observe(document.body, { childList: true, subtree: true });
-
-			}
-
-
-
-			function parseFormulaTokenList(rawValue) {
-
-				return String(rawValue || '').split(',').map(function(part) {
-
-					return String(part || '').trim();
-
-				}).filter(Boolean);
-
-			}
-
-
-
-			function getFormulaChipSourceInput(elem) {
-
-				var input = $(elem);
-
-				if (input.hasClass('formula-chip-editor')) {
-
-					return input.closest('.formula-chip-field').prev('input.formula-chip-source-input');
-
-				}
-
-				if (input.hasClass('formula-chip-source-input')) {
-
-					return input;
-
-				}
-
-				return $();
-
-			}
-
-
-
-			function updateFormulaChipField(sourceInput) {
-
-				sourceInput = $(sourceInput);
-
-				var chipField = sourceInput.next('.formula-chip-field');
-
-				if (!chipField.length) {
-
-					return;
-
-				}
-
-				var chipList = chipField.find('.formula-chip-list');
-
-				var editor = chipField.find('.formula-chip-editor');
-
-				var tokens = parseFormulaTokenList(sourceInput.val());
-
-				chipList.empty();
-
-				$.each(tokens, function(_, token) {
-
-					var chip = $('<span class="formula-chip-token"></span>');
-
-					chip.append($('<span></span>').text(token));
-
-					chip.append($('<button type="button" class="formula-chip-remove" aria-label="Remove token">&times;</button>').attr('data-token', token));
-
-					chipList.append(chip);
-
-				});
-
-				editor.attr('placeholder', tokens.length ? '' : (sourceInput.attr('placeholder') || 'Type to add...'));
-
-			}
-
-
-
-			function ensureFormulaChipEditor(sourceInput) {
-
-				sourceInput = $(sourceInput);
-
-				if (!sourceInput.length || !sourceInput.hasClass('formula-multi-suggest-input')) {
-
-					return;
-
-				}
-
-				if (sourceInput.hasClass('formula-chip-source-input')) {
-
-					return;
-
-				}
-
-
-
-				sourceInput.addClass('formula-chip-source-input');
-
-				var editorValue = sourceInput.hasClass('formula-loc-country-input') ? '' : '';
-
-				var chipField = $(
-
-					'<div class="formula-chip-field">' +
-
-						'<div class="formula-chip-list"></div>' +
-
-						'<div class="formula-autocomplete-wrapper formula-chip-editor-wrap">' +
-
-							'<input type="text" class="formula-chip-editor" value="' + editorValue + '" autocomplete="off" />' +
-
-						'</div>' +
-
-					'</div>'
-
-				);
-
-				sourceInput.after(chipField);
-
-				chipField.find('.formula-chip-editor').attr('title', sourceInput.attr('title') || '');
-
-				chipField.attr('title', sourceInput.attr('title') || '');
-
-				updateFormulaChipField(sourceInput);
-
-			}
-
-
-
-			function ensureFormulaChipEditors() {
-
-				$('.formula-multi-suggest-input:not(.formula-chip-source-input)').each(function() {
-
-					ensureFormulaChipEditor($(this));
-
-				});
-
-			}
-
-
-
-			function setFormulaChipTokens(sourceInput, tokens) {
-
-				sourceInput = $(sourceInput);
-
-				var deduped = [];
-
-				$.each(tokens, function(_, token) {
-
-					var cleanToken = String(token || '').trim();
-
-					if (!cleanToken) {
-
-						return;
-
-					}
-
-					var lowerToken = cleanToken.toLowerCase();
-
-					var alreadyAdded = deduped.some(function(existing) {
-
-						return existing.toLowerCase() === lowerToken;
-
-					});
-
-					if (!alreadyAdded) {
-
-						deduped.push(cleanToken);
-
-					}
-
-				});
-
-				sourceInput.val(deduped.join(', ')).trigger('change');
-
-				updateFormulaChipField(sourceInput);
-
-			}
-
-
-
-			function commitFormulaChipEditorValue(editor) {
-
-				editor = $(editor);
-
-				if (!editor.hasClass('formula-chip-editor')) {
-
-					return;
-
-				}
-
-				var rawValue = String(editor.val() || '').trim().replace(/,$/, '');
-
-				if (!rawValue) {
-
-					return;
-
-				}
-
-				var sourceInput = getFormulaChipSourceInput(editor);
-
-				if (!sourceInput.length) {
-
-					return;
-
-				}
-
-				var existingTokens = parseFormulaTokenList(sourceInput.val());
-
-				existingTokens.push(rawValue);
-
-				setFormulaChipTokens(sourceInput, existingTokens);
-
-				editor.val('');
-
-			}
-
-
-
 			function getFormulaValidationFields() {
 
 				return $('[name*="usa_default_shipping_formula"], [name*="usa_default_handling_formula"], input[name*="[shipping_formula]"], input[name*="[handling_formula]"]');
@@ -15880,21 +15540,37 @@ if ( ! function_exists( 'formula_rate_shipping_inject_admin_css' ) ) {
 
 
 
-			function ensureFormulaErrorBox(input) {
+			function ensureFormulaValidationUI(input) {
 
 				input = $(input);
 
-				var errorBox = input.siblings('.formula-formula-error');
+				var inlineWrap = input.siblings('.formula-validation-inline');
 
-				if (!errorBox.length) {
+				if (!inlineWrap.length) {
 
-					errorBox = $('<div class="formula-formula-error" aria-live="polite"></div>');
+					inlineWrap = $('<div class="formula-validation-inline" aria-live="polite">' +
 
-					input.after(errorBox);
+						'<span class="formula-val-badge is-unverified"><span class="dashicons dashicons-minus" style="font-size:13px;width:13px;height:13px;vertical-align:text-top;margin-right:2px;"></span> <?php echo esc_js( __( 'Needs Validation', 'formula-rate-shipping' ) ); ?></span>' +
+
+						'<span class="formula-val-msg"></span>' +
+
+						'<button type="button" class="formula-val-btn" title="<?php echo esc_js( __( 'Click to test formula syntax', 'formula-rate-shipping' ) ); ?>"><?php echo esc_js( __( 'Validate', 'formula-rate-shipping' ) ); ?></button>' +
+
+						'</div>');
+
+					input.after(inlineWrap);
 
 				}
 
-				return errorBox;
+				return inlineWrap;
+
+			}
+
+
+
+			function ensureFormulaErrorBox(input) {
+
+				return ensureFormulaValidationUI(input);
 
 			}
 
@@ -16022,7 +15698,7 @@ if ( ! function_exists( 'formula_rate_shipping_inject_admin_css' ) ) {
 
 				var snippet = formula.slice(snippetStart, snippetEnd);
 
-				return errorMessage + ' Near character ' + (issueIndex + 1) + ': "' + snippet + '"';
+				return errorMessage + ' Near char ' + (issueIndex + 1) + ': "' + snippet + '"';
 
 			}
 
@@ -16032,39 +15708,101 @@ if ( ! function_exists( 'formula_rate_shipping_inject_admin_css' ) ) {
 
 				input = $(input);
 
-				var errorBox = ensureFormulaErrorBox(input);
+				var wrap = ensureFormulaValidationUI(input);
 
-				input.removeClass('formula-input-invalid');
+				var badge = wrap.find('.formula-val-badge');
 
-				errorBox.removeClass('is-visible is-pending').text('');
+				var msgSpan = wrap.find('.formula-val-msg');
 
-				var chipField = input.hasClass('formula-chip-source-input') ? input.next('.formula-chip-field') : $();
+				var valBtn = wrap.find('.formula-val-btn');
 
-				chipField.removeClass('formula-has-error');
 
-				if (state === 'pending') {
 
-					errorBox.addClass('is-pending').text(message || 'Validating formula...');
+				input.removeClass('formula-input-invalid formula-input-valid formula-input-unverified');
+
+				badge.removeClass('is-valid is-unverified is-pending is-error');
+
+				msgSpan.text('');
+
+
+
+				if (state === 'pending' || state === 'checking') {
+
+					badge.addClass('is-pending').html('<span class="dashicons dashicons-update" style="font-size:13px;width:13px;height:13px;vertical-align:text-top;margin-right:2px;animation:rotation 1.5s infinite linear;"></span> <?php echo esc_js( __( 'Checking...', 'formula-rate-shipping' ) ); ?>');
+
+					msgSpan.text(message || '');
+
+					valBtn.text('...');
+
+					input.data('formula-status', 'checking');
 
 					return;
 
 				}
 
-				if (state === 'error') {
+
+
+				if (state === 'unverified') {
+
+					input.addClass('formula-input-unverified');
+
+					badge.addClass('is-unverified').html('<span class="dashicons dashicons-minus" style="font-size:13px;width:13px;height:13px;vertical-align:text-top;margin-right:2px;"></span> <?php echo esc_js( __( 'Needs Validation', 'formula-rate-shipping' ) ); ?>');
+
+					msgSpan.text('');
+
+					valBtn.text('<?php echo esc_js( __( 'Validate', 'formula-rate-shipping' ) ); ?>');
+
+					input.data('formula-status', 'unverified');
+
+					return;
+
+				}
+
+
+
+				if (state === 'error' || state === 'invalid') {
 
 					input.addClass('formula-input-invalid');
 
-					errorBox.addClass('is-visible').text(message || 'Invalid formula.');
+					badge.addClass('is-error').html('<span class="dashicons dashicons-dismiss" style="font-size:13px;width:13px;height:13px;vertical-align:text-top;margin-right:2px;"></span> <?php echo esc_js( __( 'Invalid', 'formula-rate-shipping' ) ); ?>');
 
-					chipField.addClass('formula-has-error');
+					msgSpan.text(message || '<?php echo esc_js( __( 'Invalid formula.', 'formula-rate-shipping' ) ); ?>');
+
+					valBtn.text('<?php echo esc_js( __( 'Validate', 'formula-rate-shipping' ) ); ?>');
+
+					input.data('formula-status', 'invalid');
+
+					return;
 
 				}
+
+
+
+				// Valid / Clear State
+
+				var formula = String(input.val() || '').trim();
+
+				if (!formula) {
+
+					badge.addClass('is-valid').html('<span class="dashicons dashicons-yes-alt" style="font-size:13px;width:13px;height:13px;vertical-align:text-top;margin-right:2px;"></span> <?php echo esc_js( __( 'Empty (0.00)', 'formula-rate-shipping' ) ); ?>');
+
+				} else {
+
+					input.addClass('formula-input-valid');
+
+					badge.addClass('is-valid').html('<span class="dashicons dashicons-yes-alt" style="font-size:13px;width:13px;height:13px;vertical-align:text-top;margin-right:2px;"></span> <?php echo esc_js( __( 'Valid', 'formula-rate-shipping' ) ); ?>');
+
+				}
+
+				valBtn.text('<?php echo esc_js( __( 'Validate', 'formula-rate-shipping' ) ); ?>');
+
+				input.data('formula-status', 'valid');
 
 			}
 
 
 
-			function validateFormulaInput(input) {
+			function validateFormulaInput(input, callback) {
 
 				input = $(input);
 
@@ -16074,15 +15812,25 @@ if ( ! function_exists( 'formula_rate_shipping_inject_admin_css' ) ) {
 
 					setFormulaValidationState(input, 'clear');
 
+					if (typeof callback === 'function') {
+
+						callback(true);
+
+					}
+
 					return;
 
 				}
 
-				setFormulaValidationState(input, 'pending', 'Validating formula...');
+
+
+				setFormulaValidationState(input, 'pending', '<?php echo esc_js( __( 'Validating formula...', 'formula-rate-shipping' ) ); ?>');
 
 				var requestId = (input.data('formula-validate-request') || 0) + 1;
 
 				input.data('formula-validate-request', requestId);
+
+
 
 				$.ajax({
 
@@ -16110,13 +15858,25 @@ if ( ! function_exists( 'formula_rate_shipping_inject_admin_css' ) ) {
 
 					if (response && response.success && response.data && response.data.valid) {
 
-						setFormulaValidationState(input, 'clear');
+						setFormulaValidationState(input, 'valid');
+
+						if (typeof callback === 'function') {
+
+							callback(true);
+
+						}
 
 					} else {
 
 						var responseMessage = response && response.data && response.data.message ? response.data.message : 'Invalid formula.';
 
 						setFormulaValidationState(input, 'error', formatFormulaErrorMessage(formula, responseMessage));
+
+						if (typeof callback === 'function') {
+
+							callback(false);
+
+						}
 
 					}
 
@@ -16128,7 +15888,13 @@ if ( ! function_exists( 'formula_rate_shipping_inject_admin_css' ) ) {
 
 					}
 
-					setFormulaValidationState(input, 'error', 'Unable to validate the formula right now.');
+					setFormulaValidationState(input, 'error', '<?php echo esc_js( __( 'Unable to validate formula right now.', 'formula-rate-shipping' ) ); ?>');
+
+					if (typeof callback === 'function') {
+
+						callback(false);
+
+					}
 
 				});
 
@@ -16136,575 +15902,39 @@ if ( ! function_exists( 'formula_rate_shipping_inject_admin_css' ) ) {
 
 
 
-			function queueFormulaValidation(input) {
+			function initAllFormulaValidationFields() {
 
-				input = $(input);
-
-				var existingTimer = input.data('formula-validate-timer');
-
-				if (existingTimer) {
-
-					clearTimeout(existingTimer);
-
-				}
-
-				var timer = setTimeout(function() {
-
-					validateFormulaInput(input);
-
-				}, 250);
-
-				input.data('formula-validate-timer', timer);
-
-			}
-
-
-
-			window.formulaEnsureChipEditors = ensureFormulaChipEditors;
-
-
-
-			// ==========================================
-
-			// SECTION 2 AUTOCOMPLETE & SUGGESTIONS LOGIC
-
-			// ==========================================
-
-			var searchTimer = null;
-
-
-
-			function closeFormulaSuggestions() {
-
-				$('.formula-autocomplete-suggestions').remove();
-
-			}
-
-
-
-			function getFormulaSuggestionSearchTerm(inputElem) {
-
-				if (inputElem.hasClass('formula-chip-editor')) {
-
-					return String(inputElem.val() || '').trim();
-
-				}
-
-				var rawValue = inputElem.val() || '';
-
-				if (!inputElem.hasClass('formula-multi-suggest-input') && !inputElem.hasClass('formula-chip-source-input')) {
-
-					return rawValue.trim();
-
-				}
-
-				var parts = rawValue.split(',');
-
-				return String(parts[parts.length - 1] || '').trim();
-
-			}
-
-
-
-			function insertFormulaSuggestionValue(inputElem, value) {
-
-				if (inputElem.hasClass('formula-chip-editor')) {
-
-					var sourceInput = getFormulaChipSourceInput(inputElem);
-
-					if (!sourceInput.length) {
-
-						return;
-
-					}
-
-					var tokens = parseFormulaTokenList(sourceInput.val());
-
-					tokens.push(String(value || '').trim());
-
-					setFormulaChipTokens(sourceInput, tokens);
-
-					inputElem.val('');
-
-					return;
-
-				}
-
-				if (!inputElem.hasClass('formula-multi-suggest-input') && !inputElem.hasClass('formula-chip-source-input')) {
-
-					inputElem.val(value).trigger('change');
-
-					return;
-
-				}
-
-
-
-				var parts = (inputElem.val() || '').split(',');
-
-				var normalizedValue = String(value || '').trim();
-
-				if (!parts.length) {
-
-					parts = [normalizedValue];
-
-				} else {
-
-					parts[parts.length - 1] = normalizedValue;
-
-				}
-
-
-
-				var deduped = [];
-
-				$.each(parts, function(_, part) {
-
-					var cleanPart = String(part || '').trim();
-
-					if (!cleanPart) {
-
-						return;
-
-					}
-
-					var lowerPart = cleanPart.toLowerCase();
-
-					var alreadyAdded = deduped.some(function(existing) {
-
-						return existing.toLowerCase() === lowerPart;
-
-					});
-
-					if (!alreadyAdded) {
-
-						deduped.push(cleanPart);
-
-					}
-
-				});
-
-
-
-				inputElem.val(deduped.join(', ')).trigger('change');
-
-			}
-
-
-
-			function getSingleCountryCodeForRow(mainRow) {
-
-				var countryInput = mainRow.find('.formula-loc-country-input');
-
-				if (!countryInput.length) {
-
-					return '';
-
-				}
-
-				var parts = (countryInput.val() || '').split(',').map(function(part) {
-
-					return String(part || '').trim();
-
-				}).filter(Boolean);
-
-				if (parts.length !== 1) {
-
-					return '';
-
-				}
-
-				var target = parts[0].toLowerCase();
-
-				var countries = window.formulaCountrySuggestions || [];
-
-				for (var i = 0; i < countries.length; i++) {
-
-					var country = countries[i] || {};
-
-					if (String(country.value || '').toLowerCase() === target) {
-
-						return String(country.value || '').toUpperCase();
-
-					}
-
-					var label = String(country.label || '').toLowerCase();
-
-					if (label === target || label.indexOf(target + ' (') === 0) {
-
-						return String(country.value || '').toUpperCase();
-
-					}
-
-				}
-
-				return target === 'all' ? 'ALL' : '';
-
-			}
-
-
-
-			function renderFormulaSuggestions(inputElem, items, badgeTitle) {
-
-				closeFormulaSuggestions();
-
-				if (!items || !items.length) {
-
-					return;
-
-				}
-
-
-
-				var wrapper = inputElem.parent();
-
-				if (!wrapper.hasClass('formula-autocomplete-wrapper')) {
-
-					inputElem.wrap('<div class="formula-autocomplete-wrapper"></div>');
-
-					wrapper = inputElem.parent();
-
-				}
-
-
-
-				var listHtml = '<ul class="formula-autocomplete-suggestions">';
-
-				$.each(items, function(i, item) {
-
-					var val = item.value || item;
-
-					var label = item.label || item;
-
-					listHtml += '<li class="formula-autocomplete-item" data-value="' + $('<div>').text(val).html() + '">' +
-
-						'<span>' + $('<div>').text(label).html() + '</span>' +
-
-						(badgeTitle ? '<span class="item-badge">' + badgeTitle + '</span>' : '') +
-
-						'</li>';
-
-				});
-
-				listHtml += '</ul>';
-
-
-
-				var suggestionElem = $(listHtml);
-
-				wrapper.append(suggestionElem);
-
-
-
-				suggestionElem.find('.formula-autocomplete-item').first().addClass('is-selected');
-
-			}
-
-
-
-			$(document.body).on('input focus', '.formula-loc-user-input, .formula-loc-device-input, .formula-loc-os-input, input[name*="[user_meta_key]"], .formula-loc-country-input, .formula-loc-state-input, .formula-sim-country-input, .formula-sim-state-input, .formula-chip-editor', function() {
-
-				var input = $(this);
-
-				var sourceInput = input.hasClass('formula-chip-editor') ? getFormulaChipSourceInput(input) : input;
-
-				var mainRow = sourceInput.closest('tr.formula-location-row-main');
-
-				if (!mainRow.length && !input.hasClass('formula-sim-country-input') && !input.hasClass('formula-sim-state-input')) {
-
-					return;
-
-				}
-
-
-
-				var isCountry = sourceInput.hasClass('formula-loc-country-input') || input.hasClass('formula-sim-country-input');
-
-				var isState = sourceInput.hasClass('formula-loc-state-input') || input.hasClass('formula-sim-state-input');
-
-				var isMetaKey = sourceInput.attr('name') && sourceInput.attr('name').indexOf('[user_meta_key]') !== -1;
-
-				var targetType = isMetaKey ? 'user_meta_key' : (mainRow.length ? (mainRow.find('.formula-loc-rule-type-input').val() || mainRow.find('.formula-loc-type-select').val() || 'user_role') : '');
-
-				if (sourceInput.hasClass('formula-loc-device-input')) {
-
-					targetType = 'device_target';
-
-				} else if (sourceInput.hasClass('formula-loc-os-input')) {
-
-					targetType = 'os_target';
-
-				}
-
-				var val = getFormulaSuggestionSearchTerm(input).toLowerCase();
-
-
-
-				clearTimeout(searchTimer);
-
-
-
-				if (isCountry) {
-
-					var countries = window.formulaCountrySuggestions || [];
-
-					// Prioritize exact and prefix matches over substring matches to avoid "US" matching "Australia (AU)".
-
-					var filteredCountries = countries.filter(function(country) {
-
-						if (!val) return true;
-
-						var valueLower = country.value.toLowerCase();
-
-						var labelLower = country.label.toLowerCase();
-
-						return valueLower === val
-
-							|| labelLower === val
-
-							|| labelLower.indexOf(val + ' (') === 0
-
-							|| valueLower.indexOf(val) === 0
-
-							|| labelLower.indexOf(val) === 0
-
-							|| labelLower.indexOf(val) !== -1;
-
-					}).sort(function(a, b) {
-
-						var aVal = a.value.toLowerCase();
-
-						var bVal = b.value.toLowerCase();
-
-						var aLabel = a.label.toLowerCase();
-
-						var bLabel = b.label.toLowerCase();
-
-						var aScore = (aVal === val ? 0 : (aVal.indexOf(val) === 0 ? 1 : (aLabel.indexOf(val) === 0 ? 2 : 3)));
-
-						var bScore = (bVal === val ? 0 : (bVal.indexOf(val) === 0 ? 1 : (bLabel.indexOf(val) === 0 ? 2 : 3)));
-
-						return aScore - bScore;
-
-					});
-
-						renderFormulaSuggestions(input, filteredCountries.slice(0, 15), 'Country');
-
-				} else if (isState) {
-
-					var countryCode = mainRow.length ? getSingleCountryCodeForRow(mainRow) : (normalizeCountryReference($('#formula_sim_country').val() || 'US'));
-
-					var stateSuggestionsMap = window.formulaCountryStateSuggestions || {};
-
-					var availableStates = countryCode && stateSuggestionsMap[countryCode] ? stateSuggestionsMap[countryCode] : [{ value: 'ALL', label: 'All States / Provinces (ALL)' }];
-
-					var filteredStates = availableStates.filter(function(stateSuggestion) {
-
-						return !val || stateSuggestion.value.toLowerCase().indexOf(val) !== -1 || stateSuggestion.label.toLowerCase().indexOf(val) !== -1;
-
-					});
-
-					renderFormulaSuggestions(input, filteredStates.slice(0, 20), countryCode && stateSuggestionsMap[countryCode] ? 'State' : 'State selector only available if one country is selected.');
-
-				} else if (targetType === 'user_role') {
-
-					var roles = window.formulaWpRoles || [
-
-						{ value: 'administrator', label: 'Administrator (administrator)' },
-
-						{ value: 'subscriber', label: 'Subscriber (subscriber)' },
-
-						{ value: 'customer', label: 'Customer (customer)' },
-
-						{ value: 'shop_manager', label: 'Shop Manager (shop_manager)' }
-
-					];
-
-					var filtered = roles.filter(function(r) {
-
-						return !val || r.value.toLowerCase().indexOf(val) !== -1 || r.label.toLowerCase().indexOf(val) !== -1;
-
-					});
-
-					renderFormulaSuggestions(input, filtered.slice(0, 15), 'Role');
-
-				} else if (targetType === 'browser' || targetType === 'device_target' || targetType === 'os_target') {
-
-					var envSuggestions = targetType === 'browser' ? (window.formulaBrowserSuggestions || []) : (targetType === 'device_target' ? (window.formulaDeviceSuggestions || []) : (window.formulaOsSuggestions || []));
-
-					var filteredEnvSuggestions = envSuggestions.filter(function(envSuggestion) {
-
-						return !val || envSuggestion.value.toLowerCase().indexOf(val) !== -1 || envSuggestion.label.toLowerCase().indexOf(val) !== -1;
-
-					});
-
-					renderFormulaSuggestions(input, filteredEnvSuggestions.slice(0, 15), targetType === 'browser' ? 'Browser' : (targetType === 'device_target' ? 'Device' : 'OS'));
-
-				} else {
-
-					closeFormulaSuggestions();
-
-				}
-
-			});
-
-
-
-			// Search targets (user login/email/meta key) only on blur or Enter key
-
-			function doSearchTargets(input, targetType) {
-
-				var val = getFormulaSuggestionSearchTerm(input).toLowerCase();
-
-				if (val.length < 1) {
-
-					closeFormulaSuggestions();
-
-					return;
-
-				}
-
-				var ajaxUrl = window.ajaxurl || '/wp-admin/admin-ajax.php';
-
-				$.ajax({
-
-					url: ajaxUrl,
-
-					type: 'POST',
-
-					data: {
-
-						action: 'formula_shipping_search_targets',
-
-						nonce: window.formulaImportNonce || '',
-
-						type: targetType,
-
-						term: val
-
-					},
-
-					success: function(response) {
-
-						if (response && response.success && response.data && response.data.results) {
-
-							var badge = (targetType === 'user_meta_key') ? 'Meta Key' : (targetType === 'user_login' ? 'Username' : 'Email');
-
-							renderFormulaSuggestions(input, response.data.results, badge);
-
-						} else {
-
-							closeFormulaSuggestions();
-
-						}
-
-					}
-
-				});
-
-			}
-
-			$(document.body).on('blur', 'input[name*="[user]"], input[name*="[user_meta_key]"]', function() {
-
-				var input = $(this);
-
-				var sourceInput = input.hasClass('formula-chip-editor') ? getFormulaChipSourceInput(input) : input;
-
-				var mainRow = sourceInput.closest('tr.formula-location-row-main');
-
-				if (!mainRow.length) return;
-
-				var targetType = (sourceInput.attr('name') && sourceInput.attr('name').indexOf('[user_meta_key]') !== -1) ? 'user_meta_key' : (mainRow.find('.formula-loc-rule-type-input').val() || 'user_role');
-
-				if (targetType === 'user_login' || targetType === 'user_email' || targetType === 'user_meta_key') {
-
-					setTimeout(function() { doSearchTargets(input, targetType); }, 150);
-
-				}
-
-			});
-
-			$(document.body).on('keydown', 'input[name*="[user]"], input[name*="[user_meta_key]"], .formula-chip-editor', function(e) {
-
-				if (e.which === 13) {
+				getFormulaValidationFields().each(function() {
 
 					var input = $(this);
 
-					var sourceInput = input.hasClass('formula-chip-editor') ? getFormulaChipSourceInput(input) : input;
+					ensureFormulaValidationUI(input);
 
-					var mainRow = sourceInput.closest('tr.formula-location-row-main');
+					var formula = String(input.val() || '').trim();
 
-					if (!mainRow.length) return;
+					if (!formula) {
 
-					var targetType = (sourceInput.attr('name') && sourceInput.attr('name').indexOf('[user_meta_key]') !== -1) ? 'user_meta_key' : (mainRow.find('.formula-loc-rule-type-input').val() || 'user_role');
+						setFormulaValidationState(input, 'clear');
 
-					if (targetType === 'user_login' || targetType === 'user_email' || targetType === 'user_meta_key') {
+					} else if (!input.data('formula-status')) {
 
-						e.preventDefault();
-
-						doSearchTargets(input, targetType);
+						setFormulaValidationState(input, 'valid');
 
 					}
 
-				}
+				});
 
-			});
-
-
-
-			$(document.body).on('click', '.formula-autocomplete-item', function(e) {
-
-				e.preventDefault();
-
-				e.stopPropagation();
-
-				var val = $(this).attr('data-value');
-
-				var wrapper = $(this).closest('.formula-autocomplete-wrapper');
-
-				var input = wrapper.find('input').first();
-
-				insertFormulaSuggestionValue(input, val);
-
-				closeFormulaSuggestions();
-
-			});
+			}
 
 
 
-			$(document.body).on('keydown', '.formula-loc-user-input, .formula-loc-device-input, .formula-loc-os-input, input[name*="[user_meta_key]"], .formula-loc-country-input, .formula-loc-state-input, .formula-chip-editor', function(e) {
+			function handleRuleToggleWithValidation(toggle, mainRow, formulaRow, syncFn) {
 
-				var suggestions = $(this).parent().find('.formula-autocomplete-suggestions');
+				var isChecked = toggle.is(':checked');
 
-				if (!suggestions.length) {
+				if (!isChecked) {
 
-					if ($(this).hasClass('formula-chip-editor')) {
-
-						if ((e.which === 13 || e.which === 188) && $(this).val().trim()) {
-
-							e.preventDefault();
-
-							commitFormulaChipEditorValue($(this));
-
-						} else if (e.which === 8 && !$(this).val().trim()) {
-
-							var sourceInput = getFormulaChipSourceInput($(this));
-
-							var tokens = parseFormulaTokenList(sourceInput.val());
-
-							if (tokens.length) {
-
-								e.preventDefault();
-
-								tokens.pop();
-
-								setFormulaChipTokens(sourceInput, tokens);
-
-							}
-
-						}
-
-					}
+					syncFn(mainRow);
 
 					return;
 
@@ -16712,115 +15942,131 @@ if ( ! function_exists( 'formula_rate_shipping_inject_admin_css' ) ) {
 
 
 
-				var items = suggestions.find('.formula-autocomplete-item');
+				var formulaInputs = formulaRow.find('input[name*="[shipping_formula]"], input[name*="[handling_formula]"]');
 
-				var selected = items.filter('.is-selected');
+				var hasInvalid = false;
+
+				var pendingInputs = [];
 
 
 
-				if (e.which === 40) { // Down Arrow
+				formulaInputs.each(function() {
 
-					e.preventDefault();
+					var input = $(this);
 
-					if (!selected.length || selected.is(':last-child')) {
+					var formula = String(input.val() || '').trim();
 
-						items.removeClass('is-selected').first().addClass('is-selected');
+					var status = input.data('formula-status');
 
-					} else {
+					if (formula && status === 'invalid') {
 
-						selected.removeClass('is-selected').next().addClass('is-selected');
+						hasInvalid = true;
 
-					}
+					} else if (formula && (status === 'unverified' || status === 'checking' || typeof status === 'undefined')) {
 
-				} else if (e.which === 38) { // Up Arrow
-
-					e.preventDefault();
-
-					if (!selected.length || selected.is(':first-child')) {
-
-						items.removeClass('is-selected').last().addClass('is-selected');
-
-					} else {
-
-						selected.removeClass('is-selected').prev().addClass('is-selected');
+						pendingInputs.push(input);
 
 					}
-
-				} else if (e.which === 13 || e.which === 9) { // Enter or Tab
-
-					if (selected.length) {
-
-						e.preventDefault();
-
-						selected.trigger('click');
-
-					}
-
-				} else if (e.which === 27) { // Esc
-
-					closeFormulaSuggestions();
-
-				}
-
-			});
-
-
-
-			$(document).on('click', function(e) {
-
-				if (!$(e.target).closest('.formula-autocomplete-wrapper').length) {
-
-					closeFormulaSuggestions();
-
-				}
-
-			});
-
-
-
-			$(document.body).on('blur', '.formula-chip-editor', function() {
-
-				var editor = $(this);
-
-				setTimeout(function() {
-
-					commitFormulaChipEditorValue(editor);
-
-				}, 100);
-
-			});
-
-
-
-			$(document.body).on('click', '.formula-chip-remove', function(e) {
-
-				e.preventDefault();
-
-				e.stopPropagation();
-
-				var chipField = $(this).closest('.formula-chip-field');
-
-				var sourceInput = chipField.prev('input.formula-chip-source-input');
-
-				var removeToken = String($(this).attr('data-token') || '').toLowerCase();
-
-				var tokens = parseFormulaTokenList(sourceInput.val()).filter(function(token) {
-
-					return String(token || '').toLowerCase() !== removeToken;
 
 				});
 
-				setFormulaChipTokens(sourceInput, tokens);
-
-				chipField.find('.formula-chip-editor').trigger('focus');
-
-			});
 
 
+				if (hasInvalid) {
 
-			$(document.body).on('change', 'input.formula-chip-source-input', function() {
+					toggle.prop('checked', false);
 
-				updateFormulaChipField($(this));
+					syncFn(mainRow);
+
+					alert('<?php echo esc_js( __( 'Cannot enable this rule: Formula contains invalid syntax. Please correct formula errors first.', 'formula-rate-shipping' ) ); ?>');
+
+					return;
+
+				}
+
+
+
+				if (pendingInputs.length > 0) {
+
+					var remaining = pendingInputs.length;
+
+					var allPassed = true;
+
+					$.each(pendingInputs, function(_, inp) {
+
+						validateFormulaInput(inp, function(isValid) {
+
+							if (!isValid) {
+
+								allPassed = false;
+
+							}
+
+							remaining--;
+
+							if (remaining === 0) {
+
+								if (!allPassed) {
+
+									toggle.prop('checked', false);
+
+									syncFn(mainRow);
+
+									alert('<?php echo esc_js( __( 'Cannot enable this rule: Formula validation failed. Please fix formula errors first.', 'formula-rate-shipping' ) ); ?>');
+
+								} else {
+
+									toggle.prop('checked', true);
+
+									syncFn(mainRow);
+
+								}
+
+							}
+
+						});
+
+					});
+
+					return;
+
+				}
+
+
+
+				syncFn(mainRow);
+
+			}
+
+
+
+			window.formulaValidateInput = validateFormulaInput;
+
+			window.formulaSetValidationState = setFormulaValidationState;
+
+			window.formulaEnsureValidationUI = ensureFormulaValidationUI;
+
+			window.formulaInitAllFields = initAllFormulaValidationFields;
+
+			window.handleFormulaRuleToggleWithValidation = handleRuleToggleWithValidation;
+
+
+
+			$(document.body).on('input keyup paste', '[name*="usa_default_shipping_formula"], [name*="usa_default_handling_formula"], input[name*="[shipping_formula]"], input[name*="[handling_formula]"]', function() {
+
+				var input = $(this);
+
+				var formula = String(input.val() || '').trim();
+
+				if (!formula) {
+
+					setFormulaValidationState(input, 'clear');
+
+				} else {
+
+					setFormulaValidationState(input, 'unverified');
+
+				}
 
 			});
 
@@ -16828,7 +16074,13 @@ if ( ! function_exists( 'formula_rate_shipping_inject_admin_css' ) ) {
 
 			$(document.body).on('blur', '[name*="usa_default_shipping_formula"], [name*="usa_default_handling_formula"], input[name*="[shipping_formula]"], input[name*="[handling_formula]"]', function() {
 
-				validateFormulaInput($(this));
+				var isAuto = $('[name*="auto_validate_formulas"]').length ? $('[name*="auto_validate_formulas"]').is(':checked') : true;
+
+				if (isAuto) {
+
+					validateFormulaInput($(this));
+
+				}
 
 			});
 
@@ -16848,7 +16100,33 @@ if ( ! function_exists( 'formula_rate_shipping_inject_admin_css' ) ) {
 
 
 
+			$(document.body).on('click', '.formula-val-btn', function(e) {
+
+				e.preventDefault();
+
+				var wrap = $(this).closest('.formula-validation-inline');
+
+				var input = wrap.prev('input');
+
+				if (!input.length) {
+
+					input = wrap.closest('.formula-field-group, .formula-rule-formula-field, td, div').find('[name*="formula"]').first();
+
+				}
+
+				if (input.length) {
+
+					validateFormulaInput(input);
+
+				}
+
+			});
+
+
+
 			ensureFormulaChipEditors();
+
+			initAllFormulaValidationFields();
 
 			toggleSettingsVisibility();
 
@@ -17028,7 +16306,7 @@ if ( ! function_exists( 'formula_shipping_export_handler' ) ) {
 
 			'plugin'    => 'formula-rate-shipping',
 
-			'version'   => '0.64.0',
+			'version'   => '0.70.1',
 
 			'exported'  => current_time( 'Y-m-d H:i:s' ),
 
@@ -17492,125 +16770,6 @@ if ( ! function_exists( 'formula_rate_shipping_custom_no_shipping_message' ) ) {
 
 /**
 
- * AJAX handler for autocompleting Section 2 user logins, emails, and user meta keys.
-
- */
-
-if ( ! function_exists( 'formula_shipping_search_targets_handler' ) ) {
-
-	function formula_shipping_search_targets_handler() {
-
-		check_ajax_referer( 'formula_shipping_import_export', 'nonce' );
-
-
-
-		if ( ! current_user_can( 'manage_woocommerce' ) ) {
-
-			wp_send_json_error( array( 'message' => 'Permission denied.' ) );
-
-		}
-
-
-
-		$target_type = isset( $_POST['type'] ) ? sanitize_text_field( $_POST['type'] ) : '';
-
-		$term        = isset( $_POST['term'] ) ? sanitize_text_field( $_POST['term'] ) : '';
-
-
-
-		if ( empty( $term ) || strlen( $term ) < 1 ) {
-
-			wp_send_json_success( array( 'results' => array() ) );
-
-		}
-
-
-
-		$results = array();
-
-
-
-		if ( 'user_login' === $target_type || 'user_email' === $target_type ) {
-
-			$user_query = new \WP_User_Query( array(
-
-				'search'         => '*' . esc_attr( $term ) . '*',
-
-				'search_columns' => array( 'user_login', 'user_email', 'user_nicename' ),
-
-				'number'         => 15,
-
-				'fields'         => array( 'ID', 'user_login', 'user_email' ),
-
-			) );
-
-
-
-			$users = $user_query->get_results();
-
-			if ( ! empty( $users ) ) {
-
-				foreach ( $users as $u ) {
-
-					if ( 'user_login' === $target_type ) {
-
-						$results[] = array(
-
-							'value' => $u->user_login,
-
-							'label' => $u->user_login . ' (' . $u->user_email . ')',
-
-						);
-
-					} else {
-
-						$results[] = array(
-
-							'value' => $u->user_email,
-
-							'label' => $u->user_email . ' (' . $u->user_login . ')',
-
-						);
-
-					}
-
-				}
-
-			}
-
-		} elseif ( 'user_meta_key' === $target_type ) {
-
-			global $wpdb;
-
-			$like = '%' . $wpdb->esc_like( $term ) . '%';
-
-			$meta_keys = $wpdb->get_col( $wpdb->prepare(
-
-				"SELECT DISTINCT meta_key FROM {$wpdb->usermeta} WHERE meta_key LIKE %s LIMIT 15",
-
-				$like
-
-			) );
-
-
-
-			if ( ! empty( $meta_keys ) ) {
-
-				foreach ( $meta_keys as $mk ) {
-
-					$results[] = array(
-
-						'value' => $mk,
-
-						'label' => $mk,
-
-					);
-
-				}
-
-			}
-
-		}
 
 
 
