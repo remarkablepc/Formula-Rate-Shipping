@@ -8,7 +8,7 @@
 
  * Description: Calculate dynamic shipping and handling rates using custom formulas, priority item rules (Categories, Tags & Attributes), location overrides, and an interactive real-time tester.
 
- * Version: 0.70.2
+ * Version: 0.70.3
 
  * Author:      RemarkablePC
 
@@ -4107,7 +4107,7 @@ function formula_rate_shipping_init() {
 
 			$this->handling_title   = $this->get_option( 'handling_title', __( 'Handling Fee', 'formula-rate-shipping' ) );
 
-			$this->round_rates      = $this->get_option( 'round_rates', 'no' );
+			$this->round_rates      = $this->get_option( 'round_rates', 'yes' );
 
 
 
@@ -4409,7 +4409,7 @@ function formula_rate_shipping_init() {
 
 			$handling_title    = $this->get_option( 'handling_title', __( 'Handling Fee', 'formula-rate-shipping' ) );
 
-			$round_rates       = $this->get_option( 'round_rates', 'no' );
+			$round_rates       = $this->get_option( 'round_rates', 'yes' );
 
 			$holiday_country   = $this->get_option( 'holiday_country', 'store' );
 
@@ -15916,7 +15916,7 @@ if ( ! function_exists( 'formula_shipping_export_handler' ) ) {
 
 								'handling_title'           => $method->get_option( 'handling_title', 'Handling Fee' ),
 
-								'round_rates'              => $method->get_option( 'round_rates', 'no' ),
+								'round_rates'              => $method->get_option( 'round_rates', 'yes' ),
 
 								'holiday_country'          => $method->get_option( 'holiday_country', 'store' ),
 
@@ -15956,7 +15956,7 @@ if ( ! function_exists( 'formula_shipping_export_handler' ) ) {
 
 			'plugin'    => 'formula-rate-shipping',
 
-			'version'   => '0.70.2',
+			'version'   => '0.70.3',
 
 			'exported'  => current_time( 'Y-m-d H:i:s' ),
 
@@ -16144,7 +16144,7 @@ if ( ! function_exists( 'formula_shipping_import_handler' ) ) {
 
 						'handling_title'           => isset( $settings['handling_title'] ) ? sanitize_text_field( $settings['handling_title'] ) : 'Handling Fee',
 
-						'round_rates'              => isset( $settings['round_rates'] ) ? sanitize_text_field( $settings['round_rates'] ) : 'no',
+						'round_rates'              => isset( $settings['round_rates'] ) ? sanitize_text_field( $settings['round_rates'] ) : 'yes',
 
 						'holiday_country'          => isset( $settings['holiday_country'] ) ? sanitize_text_field( $settings['holiday_country'] ) : 'store',
 
@@ -16208,7 +16208,7 @@ if ( ! function_exists( 'formula_shipping_import_handler' ) ) {
 
 								'handling_title'           => isset( $settings['handling_title'] ) ? sanitize_text_field( $settings['handling_title'] ) : $existing_settings['handling_title'],
 
-								'round_rates'              => isset( $settings['round_rates'] ) ? sanitize_text_field( $settings['round_rates'] ) : ( isset( $existing_settings['round_rates'] ) ? $existing_settings['round_rates'] : 'no' ),
+								'round_rates'              => isset( $settings['round_rates'] ) ? sanitize_text_field( $settings['round_rates'] ) : ( isset( $existing_settings['round_rates'] ) ? $existing_settings['round_rates'] : 'yes' ),
 
 								'holiday_country'          => isset( $settings['holiday_country'] ) ? sanitize_text_field( $settings['holiday_country'] ) : ( isset( $existing_settings['holiday_country'] ) ? $existing_settings['holiday_country'] : 'store' ),
 
@@ -16276,7 +16276,7 @@ if ( ! function_exists( 'formula_shipping_import_handler' ) ) {
 
 							'handling_title'           => isset( $settings['handling_title'] ) ? sanitize_text_field( $settings['handling_title'] ) : 'Handling Fee',
 
-							'round_rates'              => isset( $settings['round_rates'] ) ? sanitize_text_field( $settings['round_rates'] ) : 'no',
+							'round_rates'              => isset( $settings['round_rates'] ) ? sanitize_text_field( $settings['round_rates'] ) : 'yes',
 
 							'holiday_country'          => isset( $settings['holiday_country'] ) ? sanitize_text_field( $settings['holiday_country'] ) : 'store',
 
