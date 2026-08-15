@@ -8,7 +8,7 @@
 
  * Description: Calculate dynamic shipping and handling rates using custom formulas, priority item rules (Categories, Tags & Attributes), location overrides, and an interactive real-time tester.
 
- * Version: 0.70.3
+ * Version: 0.70.4
 
  * Author:      RemarkablePC
 
@@ -1580,7 +1580,7 @@ class Formula_Evaluator {
 		}, $formula );
 
 		// [fee ...], [discount ...], [sale ...] - Dynamic Order Total Line Items
-		$formula = preg_replace_callback( '/\[(fee|discount|sale)([^\]]*)\]/i', function( $matches ) use ( $contents ) {
+		$formula = preg_replace_callback( '/\[(fee|discount|sale)((?:"[^"]*"|[^\]"])*)\]/i', function( $matches ) use ( $contents ) {
 			$type_tag = strtolower( $matches[1] );
 			$attr_str = $matches[2];
 
@@ -1635,7 +1635,7 @@ class Formula_Evaluator {
 		}, $formula );
 
 		// Resolve [table on="..." tiers="..."]
-		$formula = preg_replace_callback( '/\[table\s+([^\]]+)\]/i', function( $matches ) use ( $contents, $context ) {
+		$formula = preg_replace_callback( '/\[table\s+((?:[^\]\'"]|"[^"]*"|\'[^\']*\')+)\]/i', function( $matches ) use ( $contents, $context ) {
 			$attr_str = $matches[1];
 			$on_expr = '';
 			if ( preg_match( '/on\s*=\s*[\'"]([^\'"]+)[\'"]/i', $attr_str, $m ) ) {
@@ -1705,7 +1705,7 @@ class Formula_Evaluator {
 		}, $formula );
 
 		// Resolve [scale on="..." base_cost=X base_units=Y rate=Z step=W]
-		$formula = preg_replace_callback( '/\[scale\s+([^\]]+)\]/i', function( $matches ) use ( $contents, $context ) {
+		$formula = preg_replace_callback( '/\[scale\s+((?:[^\]\'"]|"[^"]*"|\'[^\']*\')+)\]/i', function( $matches ) use ( $contents, $context ) {
 			$attr_str = $matches[1];
 			$on_expr = '';
 			if ( preg_match( '/on\s*=\s*[\'"]([^\'"]+)[\'"]/i', $attr_str, $m ) ) {
@@ -1756,7 +1756,7 @@ class Formula_Evaluator {
 		}, $formula );
 
 		// Resolve [loop var="i" from=1 to="[qty]" step=1 formula="..."]
-		$formula = preg_replace_callback( '/\[loop\s+([^\]]+)\]/i', function( $matches ) use ( $contents, $context ) {
+		$formula = preg_replace_callback( '/\[loop\s+((?:[^\]\'"]|"[^"]*"|\'[^\']*\')+)\]/i', function( $matches ) use ( $contents, $context ) {
 			$attr_str = $matches[1];
 
 			$var_name = 'i';
@@ -1890,11 +1890,11 @@ class Formula_Evaluator {
 
 				if ( ! empty( $user_data['roles'] ) && is_array( $user_data['roles'] ) ) {
 
-					return reset( $user_data['roles'] );
+					return '"' . reset( $user_data['roles'] ) . '"';
 
 				}
 
-				return 'guest';
+				return '"guest"';
 
 			},
 
@@ -2032,7 +2032,7 @@ class Formula_Evaluator {
 
 			function() use ( $context ) {
 
-				return isset( $context['shipping']['country'] ) ? $context['shipping']['country'] : 'US';
+				return '"' . ( isset( $context['shipping']['country'] ) ? $context['shipping']['country'] : 'US' ) . '"';
 
 			},
 
@@ -2078,7 +2078,7 @@ class Formula_Evaluator {
 
 			function() use ( $context ) {
 
-				return isset( $context['shipping']['state'] ) ? $context['shipping']['state'] : '';
+				return '"' . ( isset( $context['shipping']['state'] ) ? $context['shipping']['state'] : '' ) . '"';
 
 			},
 
@@ -2096,7 +2096,7 @@ class Formula_Evaluator {
 
 			function() use ( $context ) {
 
-				return isset( $context['shipping']['zip'] ) ? $context['shipping']['zip'] : '';
+				return '"' . ( isset( $context['shipping']['zip'] ) ? $context['shipping']['zip'] : '' ) . '"';
 
 			},
 
@@ -2114,7 +2114,7 @@ class Formula_Evaluator {
 
 			function() use ( $context ) {
 
-				return isset( $context['shipping']['city'] ) ? $context['shipping']['city'] : '';
+				return '"' . ( isset( $context['shipping']['city'] ) ? $context['shipping']['city'] : '' ) . '"';
 
 			},
 
@@ -2230,7 +2230,7 @@ class Formula_Evaluator {
 
 		$iteration = 0;
 
-		while ( preg_match( '/([^\s(]+)\s+CONTAINS\s+[\'"]([^\'"]+)[\'"]/i', $formula, $contains_match ) && $iteration < $max_iterations ) {
+		while ( preg_match( '/([\'"][^\'"]+[\'"]|[^\s(]+)\s+CONTAINS\s+[\'"]([^\'"]+)[\'"]/i', $formula, $contains_match ) && $iteration < $max_iterations ) {
 
 			$iteration++;
 
@@ -2240,21 +2240,11 @@ class Formula_Evaluator {
 
 			
 
-			// For CONTAINS, we need to evaluate it at runtime since it's a string operation
+			// Strip surrounding quotes from the haystack (it may be a quoted string literal).
 
-			// We'll replace it with a special marker that gets evaluated later
+			$haystack = self::strip_quotes( $haystack );
 
-			// For now, we'll use a simple approach: if both sides are literals, evaluate immediately
-
-			// Otherwise, we need to defer evaluation
-
-			
-
-			// Check if haystack is a resolved value (number or quoted string)
-
-			$haystack_val = self::evaluate_simple( $haystack );
-
-			$haystack_str = strtolower( strval( $haystack_val ) );
+			$haystack_str = strtolower( $haystack );
 
 			$needle_lower = strtolower( $needle );
 
@@ -2508,23 +2498,19 @@ class Formula_Evaluator {
 
 	public static function resolve_ternary( $formula ) {
 
-		// Process from innermost to outermost to handle nesting
+		// Resolve ternary expressions innermost-first. Supports simple and chained
+		// ternaries (e.g. 0 ? 6 : 0 ? 7 : 8). Parenthesized nesting is not fully
+		// supported by the tokenizer; any residual ternary syntax is caught by the
+		// downstream validation (and never crashes thanks to the \Throwable guard
+		// in evaluate_simple()). We process left-to-right repeatedly until stable.
 
 		$max_iterations = 50;
 
 		$iteration = 0;
 
-		
-
-		// Match: condition ? true_value : false_value
-
-		// The condition cannot contain ? or : at depth 0
-
 		while ( preg_match( '/([^?:]+)\s*\?\s*([^?:]+?)\s*:\s*([^?:]+)/', $formula, $ternary_match ) && $iteration < $max_iterations ) {
 
 			$iteration++;
-
-			
 
 			$condition_expr = trim( $ternary_match[1] );
 
@@ -2532,27 +2518,23 @@ class Formula_Evaluator {
 
 			$false_expr     = trim( $ternary_match[3] );
 
-			
+			$condition_val  = self::evaluate_logical_expression( $condition_expr );
 
-			// Evaluate condition
+			$result_expr    = ( $condition_val != 0 ) ? $true_expr : $false_expr;
 
-			$condition_val = self::evaluate_simple( $condition_expr );
+			$result_val     = self::evaluate_simple( $result_expr );
 
-			$result_expr   = ( $condition_val != 0 ) ? $true_expr : $false_expr;
-
-			$result_val    = self::evaluate_simple( $result_expr );
-
-			
-
-			$formula = substr_replace( $formula, sprintf( '%.4f', $result_val ), strpos( $formula, $ternary_match[0] ), strlen( $ternary_match[0] ) );
+			$formula        = substr_replace( $formula, sprintf( '%.4f', $result_val ), strpos( $formula, $ternary_match[0] ), strlen( $ternary_match[0] ) );
 
 		}
-
-		
 
 		return $formula;
 
 	}
+
+	
+
+
 
 
 
@@ -2907,7 +2889,7 @@ public static function evaluate( $formula, $contents ) {
 
 			// Evaluate condition using a temporary evaluator
 
-			$condition_val = self::evaluate_simple( $condition_expr );
+			$condition_val = self::evaluate_logical_expression( $condition_expr );
 
 			$result_expr   = ( $condition_val != 0 ) ? $true_expr : $false_expr;
 
@@ -3471,9 +3453,17 @@ public static function evaluate( $formula, $contents ) {
 
 				// phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged
 
-				$val = @eval( 'return (' . $clean . ');' );
+				try {
 
-				return is_numeric( $val ) ? floatval( $val ) : 0.0;
+					$val = @eval( 'return (' . $clean . ');' );
+
+					return is_numeric( $val ) ? floatval( $val ) : 0.0;
+
+				} catch ( \Throwable $e ) {
+
+					return 0.0;
+
+				}
 
 			}
 
@@ -15956,7 +15946,7 @@ if ( ! function_exists( 'formula_shipping_export_handler' ) ) {
 
 			'plugin'    => 'formula-rate-shipping',
 
-			'version'   => '0.70.3',
+			'version'   => '0.70.4',
 
 			'exported'  => current_time( 'Y-m-d H:i:s' ),
 

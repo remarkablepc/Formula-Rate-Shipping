@@ -1,3 +1,6 @@
+## v0.70.4 - 2026-08-15
+- Fix [fee formula] bracket-placeholder parsing; guard @eval against fatal ParseError on malformed formulas; add robustness test suite (334 tests total).
+
 ## v0.70.3 - 2026-08-14
 - Bug fixes and minor updates.
 
