@@ -8,7 +8,7 @@
 
  * Description: Calculate dynamic shipping and handling rates using custom formulas, priority item rules (Categories, Tags & Attributes), location overrides, and an interactive real-time tester.
 
- * Version: 0.70.1
+ * Version: 0.70.2
 
  * Author:      RemarkablePC
 
@@ -4079,147 +4079,19 @@ function formula_rate_shipping_init() {
 
 			$this->max_shipping                 = $this->get_option( 'max_shipping', $this->get_option( 'usa_max_shipping', '' ) );
 
-			$this->default_shipping_formula     = $this->get_option( 'default_shipping_formula', $this->get_option( 'usa_default_shipping_formula', '4.50 + ([qty] - 1) * 2.50' ) );
+			$this->default_shipping_formula     = $this->get_option( 'default_shipping_formula', $this->get_option( 'usa_default_shipping_formula', '' ) );
 
-			$this->default_handling_formula     = $this->get_option( 'default_handling_formula', $this->get_option( 'usa_default_handling_formula', '3.00' ) );
+			$this->default_handling_formula     = $this->get_option( 'default_handling_formula', $this->get_option( 'usa_default_handling_formula', '' ) );
 
 			$this->location_rules               = $this->get_option( 'location_rules', $this->get_option( 'usa_county_rules', array() ) );
 
-			
+			$saved_item_rules                   = $this->get_option( 'item_rules', $this->get_option( 'usa_item_rules', array() ) );
 
-			// Default rules array with Rule #5 = Variation -> Hardcover
+			if ( ! is_array( $saved_item_rules ) ) {
 
-			$default_item_rules = array(
-
-				array(
-
-					'type'             => 'category',
-
-					'target'           => 'paperback',
-
-					'shipping_formula' => '1.50 + ([qty] - 1) * 0.75',
-
-					'handling_formula' => '1.25',
-
-				),
-
-				array(
-
-					'type'             => 'category',
-
-					'target'           => 'non-fiction',
-
-					'shipping_formula' => '4.50 + ([qty] - 1) * 2.50',
-
-					'handling_formula' => '3.00',
-
-				),
-
-				array(
-
-					'type'             => 'category',
-
-					'target'           => 'pivotal-press',
-
-					'shipping_formula' => '4.50 + ([qty] - 1) * 2.50',
-
-					'handling_formula' => '3.00',
-
-				),
-
-				array(
-
-					'type'             => 'category',
-
-					'target'           => 'childrens-books',
-
-					'shipping_formula' => '4.50 + ([qty] - 1) * 2.00',
-
-					'handling_formula' => '3.00',
-
-				),
-
-				array(
-
-					'type'             => 'variation',
-
-					'target'           => 'Hardcover',
-
-					'shipping_formula' => '[category="books"] ? 4.50 + ([qty] - 1) * 3.00 : 5.00 + ([qty] - 1) * 3.50',
-
-					'handling_formula' => '3.50',
-
-				),
-
-			);
-
-
-
-			$saved_item_rules = $this->get_option( 'item_rules', $this->get_option( 'usa_item_rules', $default_item_rules ) );
-
-			if ( empty( $saved_item_rules ) || ! is_array( $saved_item_rules ) ) {
-
-				$saved_item_rules = $default_item_rules;
+				$saved_item_rules = array();
 
 			}
-
-
-
-			// Automatic Database Migration: Convert old 'hardback' or 'hardcover' tag rules into Variation SKU / Attribute -> Hardcover
-
-			// AND upgrade Hardcover shipping formula to new prepopulated formula with category check
-
-			$migrated = false;
-
-			foreach ( $saved_item_rules as $k => $r ) {
-
-				$t = isset( $r['target'] ) ? strtolower( trim( $r['target'] ) ) : '';
-
-				if ( 'hardback' === $t || 'hardcover' === $t ) {
-
-					if ( 'variation' !== ( isset( $r['type'] ) ? $r['type'] : '' ) || 'Hardcover' !== $r['target'] ) {
-
-						$saved_item_rules[ $k ]['type']   = 'variation';
-
-						$saved_item_rules[ $k ]['target'] = 'Hardcover';
-
-						$migrated                         = true;
-
-					}
-
-					$new_formula = '[category="books"] ? 4.50 + ([qty] - 1) * 3.00 : 5.00 + ([qty] - 1) * 3.50';
-
-					if ( isset( $r['shipping_formula'] ) ) {
-
-						$cleaned_formula = str_replace( ' ', '', $r['shipping_formula'] );
-
-						$cleaned_old_1   = str_replace( ' ', '', '5.00 + ([qty] - 1) * 3.50' );
-
-						$cleaned_old_2   = str_replace( ' ', '', '4.50 + ([qty] - 1) * 2.50' );
-
-						if ( $cleaned_formula === $cleaned_old_1 || $cleaned_formula === $cleaned_old_2 || empty( $cleaned_formula ) ) {
-
-							$saved_item_rules[ $k ]['shipping_formula'] = $new_formula;
-
-							$migrated                                   = true;
-
-						}
-
-					}
-
-				}
-
-			}
-
-			if ( $migrated ) {
-
-				$this->settings['item_rules'] = $saved_item_rules;
-
-				update_option( $this->get_option_key(), $this->settings );
-
-			}
-
-
 
 			$this->item_rules        = $saved_item_rules;
 
@@ -4493,11 +4365,11 @@ function formula_rate_shipping_init() {
 
 
 
-			$this->settings['usa_default_shipping_formula'] = isset( $post_data[ $this->get_field_key( 'usa_default_shipping_formula' ) ] ) ? sanitize_text_field( $post_data[ $this->get_field_key( 'usa_default_shipping_formula' ) ] ) : '4.50 + ([qty] - 1) * 2.50';
+			$this->settings['usa_default_shipping_formula'] = isset( $post_data[ $this->get_field_key( 'usa_default_shipping_formula' ) ] ) ? sanitize_text_field( $post_data[ $this->get_field_key( 'usa_default_shipping_formula' ) ] ) : ( isset( $_POST['usa_default_shipping_formula'] ) ? sanitize_text_field( $_POST['usa_default_shipping_formula'] ) : '' );
 
 
 
-			$this->settings['usa_default_handling_formula'] = isset( $post_data[ $this->get_field_key( 'usa_default_handling_formula' ) ] ) ? sanitize_text_field( $post_data[ $this->get_field_key( 'usa_default_handling_formula' ) ] ) : '3.00';
+			$this->settings['usa_default_handling_formula'] = isset( $post_data[ $this->get_field_key( 'usa_default_handling_formula' ) ] ) ? sanitize_text_field( $post_data[ $this->get_field_key( 'usa_default_handling_formula' ) ] ) : ( isset( $_POST['usa_default_handling_formula'] ) ? sanitize_text_field( $_POST['usa_default_handling_formula'] ) : '' );
 
 
 
@@ -4545,121 +4417,65 @@ function formula_rate_shipping_init() {
 
 			$usa_max_shipping  = $this->get_option( 'usa_max_shipping', '' );
 
-			$default_ship_f    = $this->get_option( 'usa_default_shipping_formula', '4.50 + ([qty] - 1) * 2.50' );
+			$default_ship_f    = $this->get_option( 'usa_default_shipping_formula', '' );
 
-			$default_hand_f    = $this->get_option( 'usa_default_handling_formula', '3.00' );
-
-
+			$default_hand_f    = $this->get_option( 'usa_default_handling_formula', '' );
 
 			$help_box_html = '
-
 				<div class="formula-shipping-help-box-wrapper" style="margin-top: 18px;">
-
 					<a href="#" class="formula-help-toggle-btn" style="display: inline-flex; align-items: center; gap: 6px; font-weight: 600; text-decoration: none; color: #0284c7; font-size: 13px;"><span class="dashicons dashicons-editor-help" style="font-size: 18px; width: 18px; height: 18px; margin:0;"></span> ' . __( 'Show Formula Quick Reference', 'formula-rate-shipping' ) . '</a>
-
 					<div class="formula-shipping-help-box" style="display: none; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 16px 18px; margin-top: 10px;">
-
-						<p style="margin:0 0 10px 0; font-size:12px; color:#334155; line-height:1.5;">' . __( 'Enter fixed amounts or dynamic math formulas using placeholders:', 'formula-rate-shipping' ) . '</p>
-
-						<p style="margin:0 0 10px 0; font-size:12px; color:#475569; line-height:1.6;">' . __( 'Section 2 now uses compact mini-tab target groups. Device and OS are entered separately, and OS aliases like Win10, Win11, Ventura, Sonoma, or Monterey are accepted. Formula validation only runs on Enter or when the field loses focus.', 'formula-rate-shipping' ) . '</p>
-
+						<p style="margin:0 0 10px 0; font-size:12px; color:#334155; line-height:1.5;">' . __( 'Enter fixed amounts or dynamic math formulas using placeholders and built-in helpers:', 'formula-rate-shipping' ) . '</p>
 						
-
 						<div style="display:grid; grid-template-columns:1fr 1fr; gap:12px 20px; font-size:12px; color:#475569; line-height:1.6;">
-
 							<div>
-
 								<p style="margin:0 0 4px 0; font-weight:700; color:#1e293b;"><span class="dashicons dashicons-archive"></span> Cart & Items:</p>
-
 								<code>[qty]</code> ' . __( 'item count', 'formula-rate-shipping' ) . ' | <code>[cost]</code> ' . __( 'subtotal', 'formula-rate-shipping' ) . '<br>
-
 								<code>[weight]</code> ' . __( 'total weight', 'formula-rate-shipping' ) . ' | <code>[items]</code> ' . __( 'unique items', 'formula-rate-shipping' ) . '<br>
-
-								<code>[on_sale]</code> ' . __( '1 if sale item in cart', 'formula-rate-shipping' ) . '<br>
-
-								<code>[rate percent=10 min_fee=5 max_fee=50]</code>
-
+								<code>[volume]</code> <code>[length]</code> <code>[width]</code> <code>[height]</code><br>
+								<code>[on_sale]</code> ' . __( '1 if sale item in cart', 'formula-rate-shipping' ) . ' | <code>[rate percent=10]</code>
 							</div>
-
 							<div>
-
 								<p style="margin:0 0 4px 0; font-weight:700; color:#1e293b;"><span class="dashicons dashicons-admin-users"></span> User, Location & Device:</p>
-
 								<code>[user="Subscriber"]</code> ' . __( 'role/email/login &rarr; 1 or 0', 'formula-rate-shipping' ) . '<br>
-
 								<code>[user_role]</code> ' . __( 'role text (or "guest")', 'formula-rate-shipping' ) . '<br>
-
 								<code>[os]</code> <code>[browser]</code> <code>[device]</code> <code>[is_mobile]</code><br>
-
 								<code>[shipping_country]</code> <code>[shipping_state]</code> <code>[shipping_zip]</code><br>
-
 								<code>[is_international]</code> <code>[is_international="US"]</code>
-
 							</div>
-
 							<div>
-
-								<p style="margin:0 0 4px 0; font-weight:700; color:#1e293b;"><span class="dashicons dashicons-tag"></span> Item Filters & Product Name:</p>
-
+								<p style="margin:0 0 4px 0; font-weight:700; color:#1e293b;"><span class="dashicons dashicons-tag"></span> Filters, Badges & Fees:</p>
 								<code>[qty category="books"]</code> <code>[cost tag="fragile"]</code><br>
-
-								<code>[weight variation="Hardcover"]</code><br>
-
-								<code>[product="My Book"]</code> ' . __( 'product name, SKU, or product ID substring match', 'formula-rate-shipping' ) . '<br>
-
-								<code>[message="Custom Title Subtext"]</code>
-
+								<code>[weight variation="Hardcover"]</code> <code>[product="SKU-100"]</code><br>
+								<code>[notice="Info text"]</code> <code>[warning="Alert text"]</code><br>
+								<code>[fee percent=5 label="Fuel Surcharge"]</code>
 							</div>
-
 							<div>
-
-								<p style="margin:0 0 4px 0; font-weight:700; color:#1e293b;"><span class="dashicons dashicons-calculator"></span> Math Functions & Logic:</p>
-
+								<p style="margin:0 0 4px 0; font-weight:700; color:#1e293b;"><span class="dashicons dashicons-calculator"></span> Math Functions & Helpers:</p>
 								<code>if(cond, true, false)</code> | <code>cond ? true : false</code><br>
-
-								<code>sum(a,b)</code> <code>min(a,b)</code> <code>max(a,b)</code> <code>ceil(v)</code> <code>floor(v)</code> <code>round(v)</code><br>
-
-								<code>IN ("CA", "WA")</code> | <code>BETWEEN 5 AND 50</code> | <code>CONTAINS "text"</code><br>
-
-								<code>AND</code> <code>OR</code> <code>NOT</code> <code>!</code> | <code>+</code> <code>-</code> <code>*</code> <code>/</code> <code>%</code>
-
+								<code>sum()</code> <code>min()</code> <code>max()</code> <code>clamp()</code> <code>round()</code> <code>ceil()</code><br>
+								<code>[table on="[qty]" tiers="1:4.50, 5:8.00, default:12.00"]</code><br>
+								<code>[scale on="[weight]" base_cost=5.00 rate=1.50 step=1]</code>
 							</div>
-
 						</div>
-
 						
-
 						<p style="margin:12px 0 6px 0; font-size:12px; color:#0f172a; font-weight:700; border-bottom:1px solid #e2e8f0; padding-bottom:4px;"><span class="dashicons dashicons-lightbulb"></span> ' . __( 'Quick Examples:', 'formula-rate-shipping' ) . '</p>
-
 						<ul style="margin:0 0 10px 0; padding-left:18px; font-size:12px; color:#475569; line-height:1.7;">
-
-							<li><strong>4.50 + ([qty] - 1) * 2.50</strong> &rarr; ' . __( 'tiered shipping', 'formula-rate-shipping' ) . '</li>
-
-							<li><strong>ceil([weight] / 5) * 4.00</strong> &rarr; ' . __( 'round up per 5 lbs box', 'formula-rate-shipping' ) . '</li>
-
-							<li><strong>if([shipping_state] IN ("CA", "OR", "WA"), 12.00, 8.00)</strong> &rarr; ' . __( 'west coast rate', 'formula-rate-shipping' ) . '</li>
-
-							<li><strong>if([weight] BETWEEN 5 AND 50, 15.00, 25.00)</strong> &rarr; ' . __( 'weight range rate', 'formula-rate-shipping' ) . '</li>
-
-							<li><strong>if([user="Subscriber"], 0.00, 5.00)</strong> &rarr; ' . __( 'free for subscribers', 'formula-rate-shipping' ) . '</li>
-
+							<li><strong>[table on="[qty]" tiers="1:4.50, 3:7.50, 6:10.00, default:15.00"]</strong> &rarr; ' . __( 'tiered bracket lookup', 'formula-rate-shipping' ) . '</li>
+							<li><strong>4.50 + ([qty] - 1) * 2.50</strong> &rarr; ' . __( 'tiered formula per item', 'formula-rate-shipping' ) . '</li>
+							<li><strong>[scale on="[weight]" base_cost=5.00 base_units=2 rate=1.50 step=1]</strong> &rarr; ' . __( 'progressive weight scale', 'formula-rate-shipping' ) . '</li>
+							<li><strong>if([cost] >= 100, 0.00, 7.99)</strong> &rarr; ' . __( 'free shipping on orders over $100', 'formula-rate-shipping' ) . '</li>
+							<li><strong>if([shipping_state] IN ("CA", "OR", "WA"), 8.50, 12.00)</strong> &rarr; ' . __( 'west coast regional rate', 'formula-rate-shipping' ) . '</li>
+							<li><strong>if([user="Subscriber"], 0.00, 5.00)</strong> &rarr; ' . __( 'free for subscribers, $5.00 others', 'formula-rate-shipping' ) . '</li>
+							<li><strong>if([is_mobile], 2.99 + [notice="Mobile Special"], 5.99)</strong> &rarr; ' . __( 'mobile rate with info badge', 'formula-rate-shipping' ) . '</li>
 						</ul>
-
 						
-
 						<p style="margin:10px 0 0 0; font-size:12px;">
-
 							<a href="#formula-documentation-card" style="font-weight:600; color:#0284c7; text-decoration:none;"><span class="dashicons dashicons-book"></span> ' . __( 'View Full Formula Documentation', 'formula-rate-shipping' ) . ' &rarr;</a>
-
 						</p>
-
 					</div>
-
 				</div>
-
 			';
-
-
 
 			ob_start();
 
@@ -10484,9 +10300,9 @@ function formula_rate_shipping_init() {
 
 
 
-								var defaultShipF = $('[name*="usa_default_shipping_formula"]').val() || '4.50 + ([qty] - 1) * 2.50';
+								var defaultShipF = String($('[name*="usa_default_shipping_formula"]').val() || '').trim();
 
-								var defaultHandF = $('[name*="usa_default_handling_formula"]').val() || '3.00';
+								var defaultHandF = String($('[name*="usa_default_handling_formula"]').val() || '').trim();
 
 
 
@@ -11398,29 +11214,29 @@ function formula_rate_shipping_init() {
 
 									<label style="font-weight: 600; font-size: 12px; color: #334155; display: block; margin-bottom: 6px;"><?php esc_html_e( 'Import Mode:', 'formula-rate-shipping' ); ?></label>
 
-									<div style="display: flex; gap: 16px; flex-wrap: wrap;">
+									<div style="display: flex; gap: 14px; align-items: center; flex-wrap: nowrap; overflow-x: auto;">
 
-										<label style="font-weight: 400; font-size: 12px; color: #475569; cursor: pointer;">
+										<label style="font-weight: 400; font-size: 12px; color: #475569; cursor: pointer; display: inline-flex; align-items: center; gap: 5px; white-space: nowrap;">
 
 											<input type="radio" name="formula_import_mode" value="replace" checked /> 
 
-											<strong><?php esc_html_e( 'Replace', 'formula-rate-shipping' ); ?></strong> - <?php esc_html_e( 'Delete all existing and import new', 'formula-rate-shipping' ); ?>
+											<strong><?php esc_html_e( 'Replace', 'formula-rate-shipping' ); ?></strong> <span style="color: #64748b;">(<?php esc_html_e( 'Overwrite', 'formula-rate-shipping' ); ?>)</span>
 
 										</label>
 
-										<label style="font-weight: 400; font-size: 12px; color: #475569; cursor: pointer;">
+										<label style="font-weight: 400; font-size: 12px; color: #475569; cursor: pointer; display: inline-flex; align-items: center; gap: 5px; white-space: nowrap;">
 
 											<input type="radio" name="formula_import_mode" value="append" /> 
 
-											<strong><?php esc_html_e( 'Append', 'formula-rate-shipping' ); ?></strong> - <?php esc_html_e( 'Add as new instances', 'formula-rate-shipping' ); ?>
+											<strong><?php esc_html_e( 'Append', 'formula-rate-shipping' ); ?></strong> <span style="color: #64748b;">(<?php esc_html_e( 'Add New', 'formula-rate-shipping' ); ?>)</span>
 
 										</label>
 
-										<label style="font-weight: 400; font-size: 12px; color: #475569; cursor: pointer;">
+										<label style="font-weight: 400; font-size: 12px; color: #475569; cursor: pointer; display: inline-flex; align-items: center; gap: 5px; white-space: nowrap;">
 
 											<input type="radio" name="formula_import_mode" value="merge" /> 
 
-											<strong><?php esc_html_e( 'Merge', 'formula-rate-shipping' ); ?></strong> - <?php esc_html_e( 'Update matching zones, add new ones', 'formula-rate-shipping' ); ?>
+											<strong><?php esc_html_e( 'Merge', 'formula-rate-shipping' ); ?></strong> <span style="color: #64748b;">(<?php esc_html_e( 'Update & Add', 'formula-rate-shipping' ); ?>)</span>
 
 										</label>
 
@@ -11782,32 +11598,42 @@ function formula_rate_shipping_init() {
 
 						<div class="card-body" style="padding: 24px 28px;">
 
-							<div style="font-size: 13px; color: #334155; line-height: 1.7;">
-
-
-
-								<!-- Accordion 0: Math Functions, Operators & Aliases -->
+								<!-- Accordion 0: Math Functions, Arithmetic Operators & Aliases -->
 								<details class="formula-help-accordion" style="margin-bottom: 12px; background: #ffffff; border: 1px solid #cbd5e1; border-radius: 8px; overflow: hidden;" open>
-									<summary style="padding: 12px 16px; font-weight: 700; font-size: 14px; color: #0f172a; background: #f8fafc; cursor: pointer; user-select: none;">📐 Mathematical Functions, Operators & Aliases</summary>
+									<summary style="padding: 12px 16px; font-weight: 700; font-size: 14px; color: #0f172a; background: #f8fafc; cursor: pointer; user-select: none;">📐 Mathematical Functions, Arithmetic Operators & Aliases</summary>
 									<div style="padding: 16px; border-top: 1px solid #e2e8f0;">
-										<p style="margin: 0 0 10px 0;">Use standard math operators (<code>+</code>, <code>-</code>, <code>*</code>, <code>/</code>, <code>%</code>, <code>^</code>), conditionals (<code>if(cond, a, b)</code>, <code>cond ? a : b</code>), and built-in functions:</p>
-										
-										<table style="width: 100%; border-collapse: collapse; font-size: 12px; border: 1px solid #e2e8f0; margin-bottom: 12px;">
+										<h5 style="margin: 0 0 6px 0; font-size: 13px; color: #0f172a; font-weight: 700;">Arithmetic Operators</h5>
+										<table style="width: 100%; border-collapse: collapse; font-size: 12px; border: 1px solid #e2e8f0; margin-bottom: 14px;">
 											<tr style="background: #f8fafc; text-align: left;">
-												<th style="padding: 6px 10px; border: 1px solid #e2e8f0;">Function</th>
+												<th style="padding: 6px 10px; border: 1px solid #e2e8f0; width: 90px;">Operator</th>
 												<th style="padding: 6px 10px; border: 1px solid #e2e8f0;">Description</th>
 												<th style="padding: 6px 10px; border: 1px solid #e2e8f0;">Example</th>
 											</tr>
-											<tr><td style="padding: 6px 10px; border: 1px solid #e2e8f0;"><code>min(a, b, ...)</code></td><td style="padding: 6px 10px; border: 1px solid #e2e8f0;">Returns the smallest value</td><td style="padding: 6px 10px; border: 1px solid #e2e8f0;"><code>min(5.00, [qty] * 2.50)</code></td></tr>
-											<tr><td style="padding: 6px 10px; border: 1px solid #e2e8f0;"><code>max(a, b, ...)</code></td><td style="padding: 6px 10px; border: 1px solid #e2e8f0;">Returns the largest value</td><td style="padding: 6px 10px; border: 1px solid #e2e8f0;"><code>max(10.00, [weight] * 1.50)</code></td></tr>
+											<tr><td style="padding: 6px 10px; border: 1px solid #e2e8f0;"><code>+</code></td><td style="padding: 6px 10px; border: 1px solid #e2e8f0;">Addition</td><td style="padding: 6px 10px; border: 1px solid #e2e8f0;"><code>[qty] + 2</code></td></tr>
+											<tr><td style="padding: 6px 10px; border: 1px solid #e2e8f0;"><code>-</code></td><td style="padding: 6px 10px; border: 1px solid #e2e8f0;">Subtraction</td><td style="padding: 6px 10px; border: 1px solid #e2e8f0;"><code>[qty] - 1</code></td></tr>
+											<tr><td style="padding: 6px 10px; border: 1px solid #e2e8f0;"><code>*</code></td><td style="padding: 6px 10px; border: 1px solid #e2e8f0;">Multiplication</td><td style="padding: 6px 10px; border: 1px solid #e2e8f0;"><code>[qty] * 2.50</code></td></tr>
+											<tr><td style="padding: 6px 10px; border: 1px solid #e2e8f0;"><code>/</code></td><td style="padding: 6px 10px; border: 1px solid #e2e8f0;">Division</td><td style="padding: 6px 10px; border: 1px solid #e2e8f0;"><code>[cost] / 2</code></td></tr>
+											<tr><td style="padding: 6px 10px; border: 1px solid #e2e8f0;"><code>%</code></td><td style="padding: 6px 10px; border: 1px solid #e2e8f0;">Modulo (remainder)</td><td style="padding: 6px 10px; border: 1px solid #e2e8f0;"><code>[qty] % 6</code></td></tr>
+											<tr><td style="padding: 6px 10px; border: 1px solid #e2e8f0;"><code>^</code></td><td style="padding: 6px 10px; border: 1px solid #e2e8f0;">Exponentiation (power)</td><td style="padding: 6px 10px; border: 1px solid #e2e8f0;"><code>[qty] ^ 2</code></td></tr>
+										</table>
+
+										<h5 style="margin: 0 0 6px 0; font-size: 13px; color: #0f172a; font-weight: 700;">Built-in Math Functions</h5>
+										<table style="width: 100%; border-collapse: collapse; font-size: 12px; border: 1px solid #e2e8f0; margin-bottom: 12px;">
+											<tr style="background: #f8fafc; text-align: left;">
+												<th style="padding: 6px 10px; border: 1px solid #e2e8f0; width: 140px;">Function</th>
+												<th style="padding: 6px 10px; border: 1px solid #e2e8f0;">Description</th>
+												<th style="padding: 6px 10px; border: 1px solid #e2e8f0;">Example</th>
+											</tr>
+											<tr><td style="padding: 6px 10px; border: 1px solid #e2e8f0;"><code>clamp(x, min, max)</code></td><td style="padding: 6px 10px; border: 1px solid #e2e8f0;">Restricts x within [min, max] boundary</td><td style="padding: 6px 10px; border: 1px solid #e2e8f0;"><code>clamp([weight] * 2.00, 5.00, 25.00)</code></td></tr>
+											<tr><td style="padding: 6px 10px; border: 1px solid #e2e8f0;"><code>min(a, b, ...)</code></td><td style="padding: 6px 10px; border: 1px solid #e2e8f0;">Returns the smallest argument value</td><td style="padding: 6px 10px; border: 1px solid #e2e8f0;"><code>min(5.00, [qty] * 2.50)</code></td></tr>
+											<tr><td style="padding: 6px 10px; border: 1px solid #e2e8f0;"><code>max(a, b, ...)</code></td><td style="padding: 6px 10px; border: 1px solid #e2e8f0;">Returns the largest argument value</td><td style="padding: 6px 10px; border: 1px solid #e2e8f0;"><code>max(10.00, [weight] * 1.50)</code></td></tr>
 											<tr><td style="padding: 6px 10px; border: 1px solid #e2e8f0;"><code>sum(a, b, ...)</code></td><td style="padding: 6px 10px; border: 1px solid #e2e8f0;">Returns the sum of all arguments</td><td style="padding: 6px 10px; border: 1px solid #e2e8f0;"><code>sum(4.50, [weight] * 1.20, 2.00)</code></td></tr>
 											<tr><td style="padding: 6px 10px; border: 1px solid #e2e8f0;"><code>avg(a, b, ...)</code></td><td style="padding: 6px 10px; border: 1px solid #e2e8f0;">Returns the average of all arguments</td><td style="padding: 6px 10px; border: 1px solid #e2e8f0;"><code>avg([cost], 50.00) * 0.10</code></td></tr>
-											<tr><td style="padding: 6px 10px; border: 1px solid #e2e8f0;"><code>clamp(x, min, max)</code></td><td style="padding: 6px 10px; border: 1px solid #e2e8f0;">Restricts x to the inclusive range [min, max]</td><td style="padding: 6px 10px; border: 1px solid #e2e8f0;"><code>clamp([weight] * 2.00, 5.00, 25.00)</code></td></tr>
 											<tr><td style="padding: 6px 10px; border: 1px solid #e2e8f0;"><code>round(x, p)</code></td><td style="padding: 6px 10px; border: 1px solid #e2e8f0;">Rounds to p decimal places</td><td style="padding: 6px 10px; border: 1px solid #e2e8f0;"><code>round([cost] * 0.10, 2)</code></td></tr>
 											<tr><td style="padding: 6px 10px; border: 1px solid #e2e8f0;"><code>ceil(x)</code></td><td style="padding: 6px 10px; border: 1px solid #e2e8f0;">Rounds up to the nearest integer</td><td style="padding: 6px 10px; border: 1px solid #e2e8f0;"><code>ceil([weight]) * 1.50</code></td></tr>
 											<tr><td style="padding: 6px 10px; border: 1px solid #e2e8f0;"><code>floor(x)</code></td><td style="padding: 6px 10px; border: 1px solid #e2e8f0;">Rounds down to the nearest integer</td><td style="padding: 6px 10px; border: 1px solid #e2e8f0;"><code>floor([qty] / 6) * 10.00</code></td></tr>
 											<tr><td style="padding: 6px 10px; border: 1px solid #e2e8f0;"><code>trunc(x)</code></td><td style="padding: 6px 10px; border: 1px solid #e2e8f0;">Removes decimal portion without rounding</td><td style="padding: 6px 10px; border: 1px solid #e2e8f0;"><code>trunc([weight]) * 2.00</code></td></tr>
-											<tr><td style="padding: 6px 10px; border: 1px solid #e2e8f0;"><code>abs(x)</code></td><td style="padding: 6px 10px; border: 1px solid #e2e8f0;">Returns the absolute value</td><td style="padding: 6px 10px; border: 1px solid #e2e8f0;"><code>abs([qty] - 10) * 0.50</code></td></tr>
+											<tr><td style="padding: 6px 10px; border: 1px solid #e2e8f0;"><code>abs(x)</code></td><td style="padding: 6px 10px; border: 1px solid #e2e8f0;">Returns absolute value</td><td style="padding: 6px 10px; border: 1px solid #e2e8f0;"><code>abs([qty] - 10) * 0.50</code></td></tr>
 											<tr><td style="padding: 6px 10px; border: 1px solid #e2e8f0;"><code>sqrt(x)</code></td><td style="padding: 6px 10px; border: 1px solid #e2e8f0;">Square root of x</td><td style="padding: 6px 10px; border: 1px solid #e2e8f0;"><code>sqrt([volume]) * 1.50</code></td></tr>
 											<tr><td style="padding: 6px 10px; border: 1px solid #e2e8f0;"><code>log(x)</code></td><td style="padding: 6px 10px; border: 1px solid #e2e8f0;">Base-10 logarithm of x</td><td style="padding: 6px 10px; border: 1px solid #e2e8f0;"><code>log([cost] + 1) * 5.00</code></td></tr>
 											<tr><td style="padding: 6px 10px; border: 1px solid #e2e8f0;"><code>ln(x)</code></td><td style="padding: 6px 10px; border: 1px solid #e2e8f0;">Natural logarithm of x</td><td style="padding: 6px 10px; border: 1px solid #e2e8f0;"><code>ln([weight] + 1) * 3.00</code></td></tr>
@@ -11815,12 +11641,54 @@ function formula_rate_shipping_init() {
 											<tr><td style="padding: 6px 10px; border: 1px solid #e2e8f0;"><code>pow(a, b)</code></td><td style="padding: 6px 10px; border: 1px solid #e2e8f0;">Exponentiation (alias for a ^ b)</td><td style="padding: 6px 10px; border: 1px solid #e2e8f0;"><code>pow([weight], 0.8) * 4.00</code></td></tr>
 											<tr><td style="padding: 6px 10px; border: 1px solid #e2e8f0;"><code>mod(a, b)</code></td><td style="padding: 6px 10px; border: 1px solid #e2e8f0;">Modulo remainder (alias for a % b)</td><td style="padding: 6px 10px; border: 1px solid #e2e8f0;"><code>mod([qty], 6) * 1.50</code></td></tr>
 										</table>
-
-										<p style="margin: 0; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 8px 12px; font-size: 12px; color: #475569;"><strong>Alias Functions:</strong> <code>pow(a, b)</code> is an alias for <code>a ^ b</code>, and <code>mod(a, b)</code> is an alias for <code>a % b</code>.</p>
+										<p style="margin: 0; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 8px 12px; font-size: 12px; color: #475569;"><strong>Note:</strong> <code>pow(a, b)</code> is identical to <code>a ^ b</code>, and <code>mod(a, b)</code> is identical to <code>a % b</code>.</p>
 									</div>
 								</details>
 
-								<!-- Accordion 1: Cart, Item & Dimensional Placeholders -->
+								<!-- Accordion 1: Conditionals, Comparisons & Logic Operators -->
+								<details class="formula-help-accordion" style="margin-bottom: 12px; background: #ffffff; border: 1px solid #cbd5e1; border-radius: 8px; overflow: hidden;">
+									<summary style="padding: 12px 16px; font-weight: 700; font-size: 14px; color: #0f172a; background: #f8fafc; cursor: pointer; user-select: none;">🔀 Conditional Logic, Comparison Operators & Logic Gates</summary>
+									<div style="padding: 16px; border-top: 1px solid #e2e8f0;">
+										<h5 style="margin: 0 0 6px 0; font-size: 13px; color: #0f172a; font-weight: 700;">Condition Syntax Styles</h5>
+										<ul style="margin: 0 0 12px 0; padding-left: 20px;">
+											<li><code>if(condition, true_value, false_value)</code> – Functional format (e.g. <code>if([cost] >= 50, 0.00, 5.00)</code>).</li>
+											<li><code>condition ? true_value : false_value</code> – Ternary operator format (e.g. <code>[cost] >= 50 ? 0.00 : 5.00</code>).</li>
+										</ul>
+
+										<h5 style="margin: 0 0 6px 0; font-size: 13px; color: #0f172a; font-weight: 700;">Comparison Operators</h5>
+										<table style="width: 100%; border-collapse: collapse; font-size: 12px; border: 1px solid #e2e8f0; margin-bottom: 14px;">
+											<tr style="background: #f8fafc; text-align: left;">
+												<th style="padding: 6px 10px; border: 1px solid #e2e8f0; width: 100px;">Operator</th>
+												<th style="padding: 6px 10px; border: 1px solid #e2e8f0;">Description</th>
+												<th style="padding: 6px 10px; border: 1px solid #e2e8f0;">Example</th>
+											</tr>
+											<tr><td style="padding: 6px 10px; border: 1px solid #e2e8f0;"><code>==</code></td><td style="padding: 6px 10px; border: 1px solid #e2e8f0;">Equal to</td><td style="padding: 6px 10px; border: 1px solid #e2e8f0;"><code>[shipping_state] == "CA"</code></td></tr>
+											<tr><td style="padding: 6px 10px; border: 1px solid #e2e8f0;"><code>!=</code></td><td style="padding: 6px 10px; border: 1px solid #e2e8f0;">Not equal to</td><td style="padding: 6px 10px; border: 1px solid #e2e8f0;"><code>[shipping_country] != "US"</code></td></tr>
+											<tr><td style="padding: 6px 10px; border: 1px solid #e2e8f0;"><code>></code></td><td style="padding: 6px 10px; border: 1px solid #e2e8f0;">Greater than</td><td style="padding: 6px 10px; border: 1px solid #e2e8f0;"><code>[qty] > 5</code></td></tr>
+											<tr><td style="padding: 6px 10px; border: 1px solid #e2e8f0;"><code><</code></td><td style="padding: 6px 10px; border: 1px solid #e2e8f0;">Less than</td><td style="padding: 6px 10px; border: 1px solid #e2e8f0;"><code>[weight] < 10</code></td></tr>
+											<tr><td style="padding: 6px 10px; border: 1px solid #e2e8f0;"><code>>=</code></td><td style="padding: 6px 10px; border: 1px solid #e2e8f0;">Greater than or equal</td><td style="padding: 6px 10px; border: 1px solid #e2e8f0;"><code>[cost] >= 100</code></td></tr>
+											<tr><td style="padding: 6px 10px; border: 1px solid #e2e8f0;"><code><=</code></td><td style="padding: 6px 10px; border: 1px solid #e2e8f0;">Less than or equal</td><td style="padding: 6px 10px; border: 1px solid #e2e8f0;"><code>[weight] <= 20</code></td></tr>
+											<tr><td style="padding: 6px 10px; border: 1px solid #e2e8f0;"><code>IN</code></td><td style="padding: 6px 10px; border: 1px solid #e2e8f0;">Matches any value in list</td><td style="padding: 6px 10px; border: 1px solid #e2e8f0;"><code>[shipping_state] IN ("CA", "OR", "WA")</code></td></tr>
+											<tr><td style="padding: 6px 10px; border: 1px solid #e2e8f0;"><code>BETWEEN</code></td><td style="padding: 6px 10px; border: 1px solid #e2e8f0;">Inclusive numeric range check</td><td style="padding: 6px 10px; border: 1px solid #e2e8f0;"><code>[weight] BETWEEN 5 AND 50</code></td></tr>
+											<tr><td style="padding: 6px 10px; border: 1px solid #e2e8f0;"><code>CONTAINS</code></td><td style="padding: 6px 10px; border: 1px solid #e2e8f0;">Case-insensitive substring match</td><td style="padding: 6px 10px; border: 1px solid #e2e8f0;"><code>[shipping_city] CONTAINS "Los"</code></td></tr>
+										</table>
+
+										<h5 style="margin: 0 0 6px 0; font-size: 13px; color: #0f172a; font-weight: 700;">Logical Gates</h5>
+										<table style="width: 100%; border-collapse: collapse; font-size: 12px; border: 1px solid #e2e8f0;">
+											<tr style="background: #f8fafc; text-align: left;">
+												<th style="padding: 6px 10px; border: 1px solid #e2e8f0; width: 100px;">Operator</th>
+												<th style="padding: 6px 10px; border: 1px solid #e2e8f0;">Description</th>
+												<th style="padding: 6px 10px; border: 1px solid #e2e8f0;">Example</th>
+											</tr>
+											<tr><td style="padding: 6px 10px; border: 1px solid #e2e8f0;"><code>AND</code></td><td style="padding: 6px 10px; border: 1px solid #e2e8f0;">Both conditions must be true</td><td style="padding: 6px 10px; border: 1px solid #e2e8f0;"><code>[user="Subscriber"] AND [qty] > 3</code></td></tr>
+											<tr><td style="padding: 6px 10px; border: 1px solid #e2e8f0;"><code>OR</code></td><td style="padding: 6px 10px; border: 1px solid #e2e8f0;">At least one condition must be true</td><td style="padding: 6px 10px; border: 1px solid #e2e8f0;"><code>[shipping_state] == "HI" OR [shipping_state] == "AK"</code></td></tr>
+											<tr><td style="padding: 6px 10px; border: 1px solid #e2e8f0;"><code>NOT</code> / <code>!</code></td><td style="padding: 6px 10px; border: 1px solid #e2e8f0;">Negates condition</td><td style="padding: 6px 10px; border: 1px solid #e2e8f0;"><code>NOT [is_weekend]</code> or <code>![user="Subscriber"]</code></td></tr>
+											<tr><td style="padding: 6px 10px; border: 1px solid #e2e8f0;"><code>( )</code></td><td style="padding: 6px 10px; border: 1px solid #e2e8f0;">Groups sub-expressions for precedence</td><td style="padding: 6px 10px; border: 1px solid #e2e8f0;"><code>([shipping_state] == "CA" OR [shipping_state] == "NV") AND [weight] < 5</code></td></tr>
+										</table>
+									</div>
+								</details>
+
+								<!-- Accordion 2: Cart, Item & Dimensional Placeholders -->
 								<details class="formula-help-accordion" style="margin-bottom: 12px; background: #ffffff; border: 1px solid #cbd5e1; border-radius: 8px; overflow: hidden;">
 									<summary style="padding: 12px 16px; font-weight: 700; font-size: 14px; color: #0f172a; background: #f8fafc; cursor: pointer; user-select: none;">📦 Cart, Item & Dimensional Placeholders</summary>
 									<div style="padding: 16px; border-top: 1px solid #e2e8f0;">
@@ -11836,7 +11704,7 @@ function formula_rate_shipping_init() {
 									</div>
 								</details>
 
-								<!-- Accordion 2: Filtered Placeholders -->
+								<!-- Accordion 3: Filtered Placeholders -->
 								<details class="formula-help-accordion" style="margin-bottom: 12px; background: #ffffff; border: 1px solid #cbd5e1; border-radius: 8px; overflow: hidden;">
 									<summary style="padding: 12px 16px; font-weight: 700; font-size: 14px; color: #0f172a; background: #f8fafc; cursor: pointer; user-select: none;">🏷️ Filtered Placeholders (Category / Tag / Variation / Product)</summary>
 									<div style="padding: 16px; border-top: 1px solid #e2e8f0;">
@@ -11852,7 +11720,7 @@ function formula_rate_shipping_init() {
 									</div>
 								</details>
 
-								<!-- Accordion 3: User Role & Identity Variables -->
+								<!-- Accordion 4: User Role & Identity Variables -->
 								<details class="formula-help-accordion" style="margin-bottom: 12px; background: #ffffff; border: 1px solid #cbd5e1; border-radius: 8px; overflow: hidden;">
 									<summary style="padding: 12px 16px; font-weight: 700; font-size: 14px; color: #0f172a; background: #f8fafc; cursor: pointer; user-select: none;">👤 User Role, Email & Metadata Variables</summary>
 									<div style="padding: 16px; border-top: 1px solid #e2e8f0;">
@@ -11867,7 +11735,7 @@ function formula_rate_shipping_init() {
 									</div>
 								</details>
 
-								<!-- Accordion 4: Device, OS & Browser Environment Matching -->
+								<!-- Accordion 5: Device, OS & Browser Environment Matching -->
 								<details class="formula-help-accordion" style="margin-bottom: 12px; background: #ffffff; border: 1px solid #cbd5e1; border-radius: 8px; overflow: hidden;">
 									<summary style="padding: 12px 16px; font-weight: 700; font-size: 14px; color: #0f172a; background: #f8fafc; cursor: pointer; user-select: none;">📱 Device, OS & Browser Environment Matching</summary>
 									<div style="padding: 16px; border-top: 1px solid #e2e8f0;">
@@ -11888,7 +11756,7 @@ function formula_rate_shipping_init() {
 									</div>
 								</details>
 
-								<!-- Accordion 5: Time, Holidays & iCal Feeds -->
+								<!-- Accordion 6: Time, Holidays & iCal Feeds -->
 								<details class="formula-help-accordion" style="margin-bottom: 12px; background: #ffffff; border: 1px solid #cbd5e1; border-radius: 8px; overflow: hidden;">
 									<summary style="padding: 12px 16px; font-weight: 700; font-size: 14px; color: #0f172a; background: #f8fafc; cursor: pointer; user-select: none;">⏰ Time, Holidays, Dates & iCal Feeds</summary>
 									<div style="padding: 16px; border-top: 1px solid #e2e8f0;">
@@ -11907,14 +11775,14 @@ function formula_rate_shipping_init() {
 									</div>
 								</details>
 
-								<!-- Accordion 6: Dynamic Rate Notices, Order Total Line Items & Positioning -->
+								<!-- Accordion 7: Dynamic Rate Notices, Order Total Line Items & Positioning -->
 								<details class="formula-help-accordion" style="margin-bottom: 12px; background: #ffffff; border: 1px solid #cbd5e1; border-radius: 8px; overflow: hidden;">
-									<summary style="padding: 12px 16px; font-weight: 700; font-size: 14px; color: #0f172a; background: #f8fafc; cursor: pointer; user-select: none;">💬 Dynamic Rate Notices, Order Total Line Items & Positioning</summary>
+									<summary style="padding: 12px 16px; font-weight: 700; font-size: 14px; color: #0f172a; background: #f8fafc; cursor: pointer; user-select: none;">ℹ️ Dynamic Rate Notices, Order Total Line Items & Positioning</summary>
 									<div style="padding: 16px; border-top: 1px solid #e2e8f0;">
 										<p style="margin: 0 0 8px 0;">Attach custom notice badges or create dynamic standalone cart line items in WooCommerce:</p>
 										<ul style="margin: 0 0 12px 0; padding-left: 20px;">
-											<li><code>if([os] == "Linux", 0.00 + [message="Thanks for supporting open source!"], 5.00)</code> – Displays a sky blue 💬 Chat badge under the rate.</li>
-											<li><code>if([is_mobile], 2.99 + [notice="Mobile App Special Rate"], 5.99)</code> – Displays a sky blue 💬 Chat badge under the rate.</li>
+											<li><code>if([os] == "Linux", 0.00 + [message="Thanks for supporting open source!"], 5.00)</code> – Displays an ℹ️ Info badge under the shipping rate.</li>
+											<li><code>if([is_mobile], 2.99 + [notice="Mobile App Special Rate"], 5.99)</code> – Displays an ℹ️ Info badge under the shipping rate.</li>
 											<li><code>if([is_international], 15.00 + [warning="Customs Delays Possible" position="top"], 5.00)</code> – Displays an amber ⚠️ Warning banner at the <strong>top of the checkout page</strong>.</li>
 											<li><code>[fee percent=5 label="Fuel Surcharge"]</code> – Adds a standalone 5% surcharge line item (Fuel Surcharge: +$3.50) with emerald green currency icon.</li>
 											<li><code>[fee formula="[qty] * 2.50" label="Hazmat Packaging Fee" icon="warning"]</code> – Adds a standalone packaging surcharge line item with an amber warning icon.</li>
@@ -11953,7 +11821,7 @@ function formula_rate_shipping_init() {
 									</div>
 								</details>
 
-								<!-- Accordion 7: Tiered Tables, Incremental Scales & Loops -->
+								<!-- Accordion 8: Tiered Tables, Incremental Scales & Loops -->
 								<details class="formula-help-accordion" style="margin-bottom: 12px; background: #ffffff; border: 1px solid #cbd5e1; border-radius: 8px; overflow: hidden;">
 									<summary style="padding: 12px 16px; font-weight: 700; font-size: 14px; color: #0f172a; background: #f8fafc; cursor: pointer; user-select: none;">📊 Tiered Tables, Incremental Scales & Loops ([table], [scale], [loop])</summary>
 									<div style="padding: 16px; border-top: 1px solid #e2e8f0;">
@@ -11963,7 +11831,7 @@ function formula_rate_shipping_init() {
 										<ul style="margin: 0 0 10px 0; padding-left: 20px;">
 											<li><code>[table on="[weight]" tiers="1:4.50, 5:8.00, 10:12.50, 20:18.00, default:25.00"]</code> – Up to 1 lb = $4.50, up to 5 lbs = $8.00, up to 10 lbs = $12.50, up to 20 lbs = $18.00, over 20 lbs = $25.00.</li>
 											<li><code>[table on="[qty]" tiers="1:5.00, 3:7.50, 6:10.00, default:15.00"]</code> – Tiered pricing based on total item quantity.</li>
-											<li><code>[table on="[subtotal]" tiers="50:9.99, 100:4.99, default:0.00"]</code> – Subtotal-based tiers (e.g. Free shipping over $100).</li>
+											<li><code>[table on="[cost]" tiers="50:9.99, 100:4.99, default:0.00"]</code> – Subtotal-based tiers (e.g. Free shipping over $100).</li>
 										</ul>
 
 										<h5 style="margin: 12px 0 4px 0; font-size: 13px; color: #0f172a; font-weight: 700;">2. <code>[scale on="<variable>" base_cost=X base_units=Y rate=Z step=W]</code> (Progressive Stepper)</h5>
@@ -11982,10 +11850,21 @@ function formula_rate_shipping_init() {
 									</div>
 								</details>
 
-								<!-- Accordion 8: Location & Country Rules Syntax -->
+								<!-- Accordion 9: Location Variables & Country Rules Syntax -->
 								<details class="formula-help-accordion" style="margin-bottom: 12px; background: #ffffff; border: 1px solid #cbd5e1; border-radius: 8px; overflow: hidden;">
-									<summary style="padding: 12px 16px; font-weight: 700; font-size: 14px; color: #0f172a; background: #f8fafc; cursor: pointer; user-select: none;">🌍 Location & Country Rules Syntax</summary>
+									<summary style="padding: 12px 16px; font-weight: 700; font-size: 14px; color: #0f172a; background: #f8fafc; cursor: pointer; user-select: none;">🌍 Location Variables & Country Rules Syntax</summary>
 									<div style="padding: 16px; border-top: 1px solid #e2e8f0;">
+										<h5 style="margin: 0 0 6px 0; font-size: 13px; color: #0f172a; font-weight: 700;">Location Placeholders</h5>
+										<ul style="margin: 0 0 12px 0; padding-left: 20px;">
+											<li><code>[shipping_country]</code> – Destination country code (e.g. <code>US</code>, <code>CA</code>, <code>MX</code>).</li>
+											<li><code>[shipping_state]</code> – Destination state/province/region code (e.g. <code>CA</code>, <code>TX</code>, <code>ON</code>).</li>
+											<li><code>[shipping_zip]</code> – Destination ZIP or postal code (e.g. <code>90210</code>, <code>M5V 2T6</code>).</li>
+											<li><code>[shipping_city]</code> – Destination city name (e.g. <code>Los Angeles</code>).</li>
+											<li><code>[is_international]</code> – Returns <code>1</code> when the shipping country differs from the store origin country, otherwise <code>0</code>.</li>
+											<li><code>[is_international="US"]</code> – Overrides origin comparison country; returns <code>1</code> when destination is outside <code>US</code>.</li>
+										</ul>
+
+										<h5 style="margin: 0 0 6px 0; font-size: 13px; color: #0f172a; font-weight: 700;">Location Input Rules</h5>
 										<ul style="margin: 0; padding-left: 20px;">
 											<li><strong>Country Inputs</strong>: Accepts 2-letter ISO codes (<code>US</code>, <code>CA</code>, <code>GB</code>, <code>FR</code>, <code>DE</code>, <code>MX</code>), 3-letter codes (<code>USA</code>, <code>CAN</code>), or full country names (<code>Canada</code>, <code>France</code>, <code>"United States"</code>, <code>'United Kingdom'</code>).</li>
 											<li><strong>Multi-Word Quotes</strong>: Enclose two-or-more-word country names in single quotes (<code>'United Kingdom'</code>) or double quotes (<code>"United States"</code>).</li>
@@ -11993,235 +11872,6 @@ function formula_rate_shipping_init() {
 										</ul>
 									</div>
 								</details>
-
-								<details class="formula-help-accordion" style="margin-bottom: 12px; background: #ffffff; border: 1px solid #cbd5e1; border-radius: 8px; overflow: hidden;">
-									<summary style="padding: 12px 16px; font-weight: 700; font-size: 14px; color: #0f172a; background: #f8fafc; cursor: pointer; user-select: none;">💻 Environment, OS & Browser String Rules</summary>
-									<div style="padding: 16px; border-top: 1px solid #e2e8f0;">
-										<ul style="margin: 0; padding-left: 20px;">
-											<li><strong>Browser Field</strong>: Accepts <strong>ANY browser name, string, or wildcard pattern</strong> (e.g. <code>Chrome</code>, <code>Firefox</code>, <code>Safari</code>, <code>Edge</code>, <code>Brave</code>, <code>Floorp</code>, <code>Vivaldi</code>, <code>Opera</code>, <code>Browser*</code>).</li>
-											<li><strong>OS Field</strong>: Accepts system aliases like <code>Win10</code>, <code>Win11</code>, <code>Ventura</code>, <code>Sonoma</code>, <code>Monterey</code>, <code>iOS 17</code>, <code>Android 14</code>, <code>Linux</code>, <code>ChromeOS</code>.</li>
-											<li><strong>Device Field</strong>: Accepts <code>mobile</code>, <code>desktop</code>, <code>tablet</code>, or <code>ALL</code>.</li>
-										</ul>
-									</div>
-								</details>
-
-
-
-								<h4 style="margin: 0 0 10px 0; font-size: 15px; color: #1e293b; font-weight: 700; border-bottom: 1px solid #e2e8f0; padding-bottom: 8px;">🌍 Location Variables</h4>
-
-								<ul style="margin: 0 0 18px 0; padding-left: 20px;">
-
-									<li><code>[shipping_country]</code> – Destination country code (e.g. <code>US</code>, <code>CA</code>, <code>MX</code>).</li>
-
-									<li><code>[shipping_state]</code> – Destination state/region code (e.g. <code>CA</code>, <code>TN</code>, <code>ON</code>).</li>
-
-									<li><code>[shipping_zip]</code> – Destination ZIP/postal code (e.g. <code>90210</code>, <code>M5V 2T6</code>).</li>
-
-									<li><code>[shipping_city]</code> – Destination city name (e.g. <code>Los Angeles</code>).</li>
-
-									<li><code>[is_international]</code> – Returns <code>1</code> when the shipping country differs from the global warehouse origin country, otherwise <code>0</code>.</li>
-
-									<li><code>[is_international="US"]</code> – Overrides the warehouse origin comparison country for that formula and returns <code>1</code> when the destination is outside <code>US</code>.</li>
-
-								</ul>
-
-
-
-								<h4 style="margin: 0 0 10px 0; font-size: 15px; color: #1e293b; font-weight: 700; border-bottom: 1px solid #e2e8f0; padding-bottom: 8px;">💰 Percentage Rate Placeholder ([rate])</h4>
-
-								<ul style="margin: 0 0 18px 0; padding-left: 20px;">
-
-									<li><code>[rate percent=10]</code> – 10% of matching cart subtotal.</li>
-
-									<li><code>[rate percent=10 min_fee=5]</code> – 10% with $5.00 minimum charge.</li>
-
-									<li><code>[rate percent=10 max_fee=50]</code> – 10% with $50.00 maximum cap.</li>
-
-									<li><code>[rate percent=10 category="books"]</code> – 10% of only the <code>books</code> category subtotal.</li>
-
-									<li><code>[rate percent=10 tag="fragile"]</code> – 10% of only items with the <code>fragile</code> tag.</li>
-
-									<li><code>[rate percent=10 variation="Hardcover"]</code> – 10% of only <code>Hardcover</code> variation items.</li>
-
-								</ul>
-
-
-
-								<h4 style="margin: 0 0 10px 0; font-size: 15px; color: #1e293b; font-weight: 700; border-bottom: 1px solid #e2e8f0; padding-bottom: 8px;">🔀 Conditional (If/Then/Else) Logic</h4>
-
-								<p style="margin: 0 0 8px 0;">Two styles are supported:</p>
-
-								<ul style="margin: 0 0 8px 0; padding-left: 20px;">
-
-									<li><code>if(condition, true_value, false_value)</code> – Excel-style function.</li>
-
-									<li><code>condition ? true_value : false_value</code> – C-style ternary operator.</li>
-
-								</ul>
-
-								<p style="margin: 0 0 18px 0;">Both evaluate the condition; if truthy (non-zero), the true value is used, otherwise the false value. Nesting is supported.</p>
-
-
-
-								<table class="widefat" style="margin: 0 0 18px 0; max-width: 600px;">
-
-									<thead>
-
-										<tr><th style="width: 100px;">Operator</th><th>Description</th><th>Example</th></tr>
-
-									</thead>
-
-									<tbody>
-
-										<tr><td><code>AND</code></td><td>Both conditions must be true</td><td><code>[user="Subscriber"] AND [qty] > 3</code></td></tr>
-
-										<tr><td><code>OR</code></td><td>At least one condition must be true</td><td><code>[category="books"] OR [tag="fragile"]</code></td></tr>
-
-										<tr><td><code>NOT</code></td><td>Negates a condition</td><td><code>NOT [user="Subscriber"]</code></td></tr>
-
-										<tr><td><code>!</code></td><td>Negates a condition (shorthand)</td><td><code>![user="Subscriber"]</code></td></tr>
-
-										<tr><td><code>( )</code></td><td>Groups conditions for precedence</td><td><code>([category="books"] OR [tag="fragile"]) AND [qty] > 2</code></td></tr>
-
-									</tbody>
-
-								</table>
-
-
-
-								<h4 style="margin: 0 0 10px 0; font-size: 15px; color: #1e293b; font-weight: 700; border-bottom: 1px solid #e2e8f0; padding-bottom: 8px;">⚖️ Comparison Operators</h4>
-
-								<table class="widefat" style="margin: 0 0 18px 0; max-width: 600px;">
-
-									<thead>
-
-										<tr><th style="width: 100px;">Operator</th><th>Description</th><th>Example</th></tr>
-
-									</thead>
-
-									<tbody>
-
-										<tr><td><code>></code></td><td>Greater than</td><td><code>[qty] > 5</code></td></tr>
-
-										<tr><td><code><</code></td><td>Less than</td><td><code>[weight] < 10</code></td></tr>
-
-										<tr><td><code>>=</code></td><td>Greater than or equal</td><td><code>[qty] >= 6</code></td></tr>
-
-										<tr><td><code><=</code></td><td>Less than or equal</td><td><code>[cost] <= 50</code></td></tr>
-
-										<tr><td><code>==</code></td><td>Equal to</td><td><code>[shipping_state] == "CA"</code></td></tr>
-
-										<tr><td><code>!=</code></td><td>Not equal to</td><td><code>[shipping_country] != "US"</code></td></tr>
-
-										<tr><td><code>IN</code></td><td>Matches a value in a list</td><td><code>[shipping_state] IN ("CA", "OR", "WA")</code></td></tr>
-
-										<tr><td><code>BETWEEN</code></td><td>Inclusive numeric range</td><td><code>[weight] BETWEEN 5 AND 50</code></td></tr>
-
-										<tr><td><code>CONTAINS</code></td><td>Case-insensitive substring match</td><td><code>[shipping_city] CONTAINS "Los"</code></td></tr>
-
-									</tbody>
-
-								</table>
-
-
-
-								<h4 style="margin: 0 0 10px 0; font-size: 15px; color: #1e293b; font-weight: 700; border-bottom: 1px solid #e2e8f0; padding-bottom: 8px;">🧮 Math Operators</h4>
-
-								<table class="widefat" style="margin: 0 0 18px 0; max-width: 600px;">
-
-									<thead>
-
-										<tr><th style="width: 100px;">Operator</th><th>Description</th><th>Example</th></tr>
-
-									</thead>
-
-									<tbody>
-
-										<tr><td><code>+</code></td><td>Addition</td><td><code>[qty] + 2</code></td></tr>
-
-										<tr><td><code>-</code></td><td>Subtraction</td><td><code>[qty] - 1</code></td></tr>
-
-										<tr><td><code>*</code></td><td>Multiplication</td><td><code>[qty] * 2.50</code></td></tr>
-
-										<tr><td><code>/</code></td><td>Division</td><td><code>[cost] / 2</code></td></tr>
-
-										<tr><td><code>%</code></td><td>Modulo (remainder)</td><td><code>[qty] % 6</code></td></tr>
-
-										<tr><td><code>^</code></td><td>Exponentiation (power)</td><td><code>[qty] ^ 2</code></td></tr>
-
-									</tbody>
-
-								</table>
-
-
-
-								<h4 style="margin: 0 0 10px 0; font-size: 15px; color: #1e293b; font-weight: 700; border-bottom: 1px solid #e2e8f0; padding-bottom: 8px;">Math Functions</h4>
-
-								<table class="widefat" style="margin: 0 0 18px 0; max-width: 600px;">
-
-									<thead>
-
-										<tr><th style="width: 100px;">Function</th><th>Description</th><th>Example</th></tr>
-
-									</thead>
-
-									<tbody>
-
-										<tr><td><code>clamp()</code></td><td>Restricts value between min and max floor/ceiling</td><td><code>clamp([weight] * 2.50, 5.00, 50.00)</code></td></tr>
-
-										<tr><td><code>sum()</code></td><td>Sum of numbers</td><td><code>sum(10, 20, 30)</code> or <code>sum([cost], 5)</code></td></tr>
-
-										<tr><td><code>avg()</code></td><td>Average of numbers</td><td><code>avg(10, 20, 30)</code></td></tr>
-
-										<tr><td><code>min()</code></td><td>Smallest value</td><td><code>min(20, [qty] * 3)</code></td></tr>
-
-										<tr><td><code>max()</code></td><td>Largest value</td><td><code>max(5, [weight] * 1.5)</code></td></tr>
-
-										<tr><td><code>round()</code></td><td>Rounds to an optional precision</td><td><code>round([cost] * 0.1, 2)</code></td></tr>
-
-										<tr><td><code>ceil()</code></td><td>Rounds up</td><td><code>ceil([weight]) * 2</code></td></tr>
-
-										<tr><td><code>floor()</code></td><td>Rounds down</td><td><code>floor([qty] / 6) * 10</code></td></tr>
-
-										<tr><td><code>abs()</code></td><td>Absolute value</td><td><code>abs([qty] - 10)</code></td></tr>
-
-									</tbody>
-
-								</table>
-
-
-
-								<h4 style="margin: 0 0 10px 0; font-size: 15px; color: #1e293b; font-weight: 700; border-bottom: 1px solid #e2e8f0; padding-bottom: 8px;">🧪 Formula Examples</h4>
-
-								<ol style="margin: 0 0 18px 0; padding-left: 20px;">
-
-									<li><strong>1.50 + ([qty] - 1) * 0.75</strong> – Tiered shipping: $1.50 first item + $0.75 each additional.</li>
-
-									<li><strong>[category="books"] ? 4.50 + ([qty] - 1) * 3.00 : 5.00 + ([qty] - 1) * 3.50</strong> – Category-conditional shipping (ternary).</li>
-
-									<li><strong>if([user="Subscriber"], 0.00, 5.00)</strong> – Free shipping for Subscribers, $5.00 otherwise.</li>
-
-									<li><strong>if([user="Subscriber"] AND [variation="Hardcover"], 0.00, 7.50)</strong> – Free shipping for Subscriber hardcovers.</li>
-
-									<li><strong>if(![user="Subscriber"], 10.00, 0.00)</strong> – $10.00 for non-subscribers only.</li>
-
-									<li><strong>if([shipping_state] == "CA", 15.00, 10.00)</strong> – $15.00 for California, $10.00 otherwise.</li>
-
-									<li><strong>[weight] * 1.50</strong> – $1.50 per pound.</li>
-
-									<li><strong>if([qty] % 6 > 0, 15.00, 10.00)</strong> – $15.00 for partial box, $10.00 for full box.</li>
-
-									<li><strong>if([weight] > 50, 25.00, 10.00)</strong> – $25.00 if over 50 lbs, else $10.00.</li>
-
-									<li><strong>if([category="Books"] > 0, [qty] * 3.50, [qty] * 2.50)</strong> – Different rates for books vs non-books.</li>
-
-									<li><strong>[user="Subscriber"] ? 0.00 : [qty] * 2.50</strong> – Free for subscribers, else per-item rate (ternary).</li>
-
-									<li><strong>[rate percent=10 min_fee=5]</strong> – 10% of cart subtotal, never less than $5.00.</li>
-
-									<li><strong>[qty category="paperback"] * 0.75</strong> – $0.75 per mini-book in the cart.</li>
-
-									<li><strong>if([user_role] == "guest", 8.00, 5.00)</strong> – $8.00 for guests, $5.00 for registered users.</li>
 
 								</ol>
 
@@ -13547,7 +13197,7 @@ if ( ! function_exists( 'formula_rate_shipping_render_rate_notice' ) ) {
 
 			// Legacy plain-text notice
 
-			echo '<div class="formula-rate-notice-badge formula-notice-message" style="display:inline-flex;align-items:center;gap:6px;margin:6px 0 2px 24px;padding:4px 10px;border-radius:6px;font-size:12px;font-weight:500;line-height:1.4;background:#f0f9ff;border:1px solid #bae6fd;color:#0369a1;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#0284c7" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg><span>' . esc_html( $notice ) . '</span></div>';
+			echo '<div class="formula-rate-notice-badge formula-notice-message" style="display:inline-flex;align-items:center;gap:6px;margin:6px 0 2px 24px;padding:4px 10px;border-radius:6px;font-size:12px;font-weight:500;line-height:1.4;background:#f0f9ff;border:1px solid #bae6fd;color:#0369a1;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#0284c7" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg><span>' . esc_html( $notice ) . '</span></div>';
 
 			return;
 
@@ -13599,7 +13249,7 @@ if ( ! function_exists( 'formula_rate_shipping_render_rate_notice' ) ) {
 
 			$text_color   = '#0369a1';
 
-			$svg_icon     = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#0284c7" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>';
+			$svg_icon     = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#0284c7" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>';
 
 			if ( 'notice' === $type ) {
 
@@ -13647,7 +13297,7 @@ if ( ! function_exists( 'formula_rate_shipping_render_positioned_notices' ) ) {
 			$bg_color     = '#f0f9ff';
 			$border_color = '#bae6fd';
 			$text_color   = '#0369a1';
-			$svg_icon     = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#0284c7" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>';
+			$svg_icon     = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#0284c7" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>';
 
 			if ( 'notice' === $type ) {
 				$bg_color     = '#f0fdf4';
@@ -16276,9 +15926,9 @@ if ( ! function_exists( 'formula_shipping_export_handler' ) ) {
 
 								'max_shipping'             => $method->get_option( 'max_shipping', $method->get_option( 'usa_max_shipping', '' ) ),
 
-								'default_shipping_formula' => $method->get_option( 'default_shipping_formula', $method->get_option( 'usa_default_shipping_formula', '4.50 + ([qty] - 1) * 2.50' ) ),
+								'default_shipping_formula' => $method->get_option( 'default_shipping_formula', $method->get_option( 'usa_default_shipping_formula', '' ) ),
 
-								'default_handling_formula' => $method->get_option( 'default_handling_formula', $method->get_option( 'usa_default_handling_formula', '3.00' ) ),
+								'default_handling_formula' => $method->get_option( 'default_handling_formula', $method->get_option( 'usa_default_handling_formula', '' ) ),
 
 								'location_rule_resolution' => $method->get_option( 'location_rule_resolution', $method->get_option( 'usa_location_rule_resolution', 'first_match' ) ),
 
@@ -16306,7 +15956,7 @@ if ( ! function_exists( 'formula_shipping_export_handler' ) ) {
 
 			'plugin'    => 'formula-rate-shipping',
 
-			'version'   => '0.70.1',
+			'version'   => '0.70.2',
 
 			'exported'  => current_time( 'Y-m-d H:i:s' ),
 
@@ -16504,9 +16154,9 @@ if ( ! function_exists( 'formula_shipping_import_handler' ) ) {
 
 						'max_shipping'             => isset( $settings['max_shipping'] ) ? sanitize_text_field( $settings['max_shipping'] ) : '',
 
-						'default_shipping_formula' => isset( $settings['default_shipping_formula'] ) ? sanitize_text_field( $settings['default_shipping_formula'] ) : '4.50 + ([qty] - 1) * 2.50',
+						'default_shipping_formula' => isset( $settings['default_shipping_formula'] ) ? sanitize_text_field( $settings['default_shipping_formula'] ) : '',
 
-						'default_handling_formula' => isset( $settings['default_handling_formula'] ) ? sanitize_text_field( $settings['default_handling_formula'] ) : '3.00',
+						'default_handling_formula' => isset( $settings['default_handling_formula'] ) ? sanitize_text_field( $settings['default_handling_formula'] ) : '',
 
 						'location_rule_resolution' => isset( $settings['location_rule_resolution'] ) ? sanitize_text_field( $settings['location_rule_resolution'] ) : ( isset( $settings['usa_location_rule_resolution'] ) ? sanitize_text_field( $settings['usa_location_rule_resolution'] ) : 'first_match' ),
 
@@ -16636,9 +16286,9 @@ if ( ! function_exists( 'formula_shipping_import_handler' ) ) {
 
 							'max_shipping'             => isset( $settings['max_shipping'] ) ? sanitize_text_field( $settings['max_shipping'] ) : '',
 
-							'default_shipping_formula' => isset( $settings['default_shipping_formula'] ) ? sanitize_text_field( $settings['default_shipping_formula'] ) : '4.50 + ([qty] - 1) * 2.50',
+							'default_shipping_formula' => isset( $settings['default_shipping_formula'] ) ? sanitize_text_field( $settings['default_shipping_formula'] ) : '',
 
-							'default_handling_formula' => isset( $settings['default_handling_formula'] ) ? sanitize_text_field( $settings['default_handling_formula'] ) : '3.00',
+							'default_handling_formula' => isset( $settings['default_handling_formula'] ) ? sanitize_text_field( $settings['default_handling_formula'] ) : '',
 
 							'location_rule_resolution' => isset( $settings['location_rule_resolution'] ) ? sanitize_text_field( $settings['location_rule_resolution'] ) : 'first_match',
 
