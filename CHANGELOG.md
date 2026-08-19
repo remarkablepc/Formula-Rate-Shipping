@@ -1,3 +1,6 @@
+## v0.70.5 - 2026-08-18
+- Fix Folded Incremental resolution in JavaScript simulation and rate tester to charge secondary items incremental-only rates
+
 ## v0.70.4 - 2026-08-15
 - Fix [fee formula] bracket-placeholder parsing; guard @eval against fatal ParseError on malformed formulas; add robustness test suite (334 tests total).
 

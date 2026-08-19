@@ -8,7 +8,7 @@
 
  * Description: Calculate dynamic shipping and handling rates using custom formulas, priority item rules (Categories, Tags & Attributes), location overrides, and an interactive real-time tester.
 
- * Version: 0.70.4
+ * Version: 0.70.5
 
  * Author:      RemarkablePC
 
@@ -10396,17 +10396,37 @@ function formula_rate_shipping_init() {
 
 
 
+																						var ruleQty = matchingItems.reduce(function(acc, item){ return acc + (item.qty || 1); }, 0);
+											var baseShip = rShipCost;
+											var incremental = 0.0;
+											if (rShipF) {
+												var singleItems = [Object.assign({}, matchingItems[0], { qty: 1, quantity: 1 })];
+												try {
+													baseShip = evaluateFormula(rShipF, singleItems);
+												} catch(err) {}
+
+												if (ruleQty > 1) {
+													incremental = Math.max(0.0, (rShipCost - baseShip) / (ruleQty - 1));
+												} else if (matchingItems.length > 0) {
+													var twoItems = [Object.assign({}, matchingItems[0], { qty: 2, quantity: 2 })];
+													try {
+														var twoShip = evaluateFormula(rShipF, twoItems);
+														incremental = Math.max(0.0, twoShip - baseShip);
+													} catch(err) {}
+												}
+											}
+
 											appliedRules.push({
 
 												shipping: rShipCost,
 
 												handling: rHandCost,
 
-												base_ship: rShipCost,
+												base_ship: baseShip,
 
-												incremental: (matchingItems.length > 1 ? rShipCost / matchingItems.length : rShipCost),
+												incremental: incremental,
 
-												qty: matchingItems.reduce(function(acc, i){ return acc + (i.qty || 1); }, 0),
+												qty: ruleQty,
 
 												total: rShipCost + rHandCost,
 
@@ -10464,17 +10484,37 @@ function formula_rate_shipping_init() {
 
 
 
+																				var defQty = uncategorizedItems.reduce(function(acc, item){ return acc + (item.qty || 1); }, 0);
+										var defBaseShip = rShipCost;
+										var defIncremental = 0.0;
+										if (defaultShipF) {
+											var singleItems = [Object.assign({}, uncategorizedItems[0], { qty: 1, quantity: 1 })];
+											try {
+												defBaseShip = evaluateFormula(defaultShipF, singleItems);
+											} catch(err) {}
+
+											if (defQty > 1) {
+												defIncremental = Math.max(0.0, (rShipCost - defBaseShip) / (defQty - 1));
+											} else if (uncategorizedItems.length > 0) {
+												var twoItems = [Object.assign({}, uncategorizedItems[0], { qty: 2, quantity: 2 })];
+												try {
+													var twoShip = evaluateFormula(defaultShipF, twoItems);
+													defIncremental = Math.max(0.0, twoShip - defBaseShip);
+												} catch(err) {}
+											}
+										}
+
 										appliedRules.push({
 
 											shipping: rShipCost,
 
 											handling: rHandCost,
 
-											base_ship: rShipCost,
+											base_ship: defBaseShip,
 
-											incremental: (uncategorizedItems.length > 1 ? rShipCost / uncategorizedItems.length : rShipCost),
+											incremental: defIncremental,
 
-											qty: uncategorizedItems.reduce(function(acc, i){ return acc + (i.qty || 1); }, 0),
+											qty: defQty,
 
 											total: rShipCost + rHandCost,
 
@@ -10522,11 +10562,14 @@ function formula_rate_shipping_init() {
 
 										} else if (resolutionLogic === 'merge_difference') {
 
-											appliedRules.sort(function(a, b) { return b.base_ship - a.base_ship; });
+											appliedRules.sort(function(a, b) {
+												if (a.base_ship === b.base_ship) return 0;
+												return (a.base_ship > b.base_ship) ? -1 : 1;
+											});
 
 											var primaryRule = appliedRules[0];
 
-											itemShippingAdd = primaryRule.shipping;
+											itemShippingAdd = primaryRule.base_ship + ((primaryRule.qty - 1) * primaryRule.incremental);
 
 											itemHandlingAdd = 0.0;
 
@@ -10538,7 +10581,8 @@ function formula_rate_shipping_init() {
 
 											for (var s = 1; s < appliedRules.length; s++) {
 
-												itemShippingAdd += appliedRules[s].shipping;
+												var sec = appliedRules[s];
+												itemShippingAdd += sec.qty * sec.incremental;
 
 											}
 
@@ -11000,11 +11044,13 @@ function formula_rate_shipping_init() {
 
 											var shippingParts = [];
 
-											shippingParts.push('Rule ' + primaryRule.index + ' set the base shipping from ' + (primaryRule.shipping_formula || '0.00') + ' = $' + primaryRule.shipping.toFixed(2));
+											var primaryCost = primaryRule.base_ship + ((primaryRule.qty - 1) * primaryRule.incremental);
+											shippingParts.push('Rule ' + primaryRule.index + ' set the primary base shipping ($' + primaryRule.base_ship.toFixed(2) + (primaryRule.qty > 1 ? ' + ' + (primaryRule.qty - 1) + ' extra @ $' + primaryRule.incremental.toFixed(2) : '') + ' = $' + primaryCost.toFixed(2) + ')');
 
 											appliedRules.slice(1).forEach(function(rule) {
 
-												shippingParts.push('Rule ' + rule.index + ' folded in from ' + (rule.shipping_formula || '0.00') + ' = $' + rule.shipping.toFixed(2));
+												var foldedCost = rule.qty * rule.incremental;
+												shippingParts.push('Rule ' + rule.index + ' folded in (' + rule.qty + ' item(s) @ $' + rule.incremental.toFixed(2) + ' incremental = $' + foldedCost.toFixed(2) + ')');
 
 											});
 
@@ -15946,7 +15992,7 @@ if ( ! function_exists( 'formula_shipping_export_handler' ) ) {
 
 			'plugin'    => 'formula-rate-shipping',
 
-			'version'   => '0.70.4',
+			'version'   => '0.70.5',
 
 			'exported'  => current_time( 'Y-m-d H:i:s' ),
 
