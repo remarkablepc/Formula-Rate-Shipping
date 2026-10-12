@@ -1,12 +1,12 @@
 <?php
 /**
  * Plugin Name:       Formula Rate Shipping
- * Plugin URI:        https://github.com/remarkablepc/FormulaRateShipping
+ * Plugin URI:        https://github.com/remarkablepc/Formula-Rate-Shipping
  * Description:       Calculate dynamic shipping and handling rates using custom formulas, priority item rules (Categories, Tags & Attributes), location overrides, and an interactive real-time tester.
  * Version:           0.70.5
  * Author:            RemarkablePC
  * Author URI:        https://remarkablepc.com/
- * License:           GPL v2 or later (MIT compatible)
+ * License:           GPL-2.0-or-later
  * License URI:       https://www.gnu.org/licenses/gpl-2.0.html
  * Text Domain:       formula-rate-shipping
  * Donate link:       https://www.paypal.com/ncp/payment/EKH76RTYHH24S
@@ -11943,7 +11943,7 @@ function formula_rate_shipping_init() {
 											<?php esc_html_e( 'Supporting Open Source Development', 'formula-rate-shipping' ); ?>
 										</div>
 										<p style="margin: 4px 0 0 0; font-size: 12px; color: #881337; line-height: 1.4;">
-											<?php esc_html_e( 'Formula Rate Shipping is 100% free and open-source under GPL v2 (MIT compatible). Your support helps fund maintenance, unit tests, and ongoing improvements.', 'formula-rate-shipping' ); ?>
+											<?php esc_html_e( 'Formula Rate Shipping is 100% free and open-source under GPL v2 or later. Your support helps fund maintenance, unit tests, and ongoing improvements.', 'formula-rate-shipping' ); ?>
 										</p>
 									</div>
 									<div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
