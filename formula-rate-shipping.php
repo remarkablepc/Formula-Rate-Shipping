@@ -1,33 +1,59 @@
 <?php
-
 /**
-
- * Plugin Name: Formula Rate Shipping
-
- * Plugin URI:  https://github.com/google-antigravity/FormulaRateShipping
-
- * Description: Calculate dynamic shipping and handling rates using custom formulas, priority item rules (Categories, Tags & Attributes), location overrides, and an interactive real-time tester.
-
- * Version: 0.70.5
-
- * Author:      RemarkablePC
-
- * License:     GPL-2.0+
-
- * Text Domain: formula-rate-shipping
-
+ * Plugin Name:       Formula Rate Shipping
+ * Plugin URI:        https://github.com/remarkablepc/FormulaRateShipping
+ * Description:       Calculate dynamic shipping and handling rates using custom formulas, priority item rules (Categories, Tags & Attributes), location overrides, and an interactive real-time tester.
+ * Version:           0.70.5
+ * Author:            RemarkablePC
+ * Author URI:        https://remarkablepc.com/
+ * License:           GPL v2 or later (MIT compatible)
+ * License URI:       https://www.gnu.org/licenses/gpl-2.0.html
+ * Text Domain:       formula-rate-shipping
+ * Donate link:       https://www.paypal.com/ncp/payment/EKH76RTYHH24S
  *
-
+ * Copyright (c) 2026 RemarkablePC / David Hewitt
+ *
  * @package FormulaRateShipping
-
  */
 
-
-
 if ( ! defined( 'ABSPATH' ) ) {
-
 	exit;
+}
 
+// Define Plugin Constants
+defined( 'FORMULA_RATE_SHIPPING_VERSION' ) || define( 'FORMULA_RATE_SHIPPING_VERSION', '0.70.5' );
+defined( 'FORMULA_RATE_SHIPPING_FILE' ) || define( 'FORMULA_RATE_SHIPPING_FILE', __FILE__ );
+defined( 'FORMULA_RATE_SHIPPING_BASENAME' ) || define( 'FORMULA_RATE_SHIPPING_BASENAME', plugin_basename( __FILE__ ) );
+
+/**
+ * Add Settings link to Plugins page.
+ */
+if ( ! function_exists( 'formula_rate_shipping_add_action_links' ) ) {
+	function formula_rate_shipping_add_action_links( $links ) {
+		$settings_url = admin_url( 'admin.php?page=wc-settings&tab=shipping' );
+		$custom_links = array(
+			'<a href="' . esc_url( $settings_url ) . '">' . esc_html__( 'Settings', 'formula-rate-shipping' ) . '</a>',
+		);
+		return array_merge( $custom_links, $links );
+	}
+	add_filter( 'plugin_action_links_' . plugin_basename( __FILE__ ), 'formula_rate_shipping_add_action_links' );
+}
+
+/**
+ * Add Sponsor and Donate metadata links to Plugins page.
+ */
+if ( ! function_exists( 'formula_rate_shipping_add_plugin_row_meta' ) ) {
+	function formula_rate_shipping_add_plugin_row_meta( $links, $file ) {
+		if ( plugin_basename( __FILE__ ) === $file ) {
+			$sponsor_link = '<a href="' . esc_url( 'https://github.com/sponsors/remarkablepc?utm_source=formula-rate-shipping&utm_medium=plugin-row-meta' ) . '" target="_blank" rel="noopener noreferrer" style="color: #ea4aaa; font-weight: 600;"><span class="dashicons dashicons-heart" style="font-size: 14px; width: 14px; height: 14px; vertical-align: -2px; margin-right: 2px;"></span>' . esc_html__( 'Sponsor on GitHub', 'formula-rate-shipping' ) . '</a>';
+			$paypal_link  = '<a href="' . esc_url( 'https://www.paypal.com/ncp/payment/EKH76RTYHH24S' ) . '" target="_blank" rel="noopener noreferrer" style="color: #0070ba; font-weight: 600;"><span class="dashicons dashicons-money-alt" style="font-size: 14px; width: 14px; height: 14px; vertical-align: -2px; margin-right: 2px;"></span>' . esc_html__( 'Donate via PayPal / Venmo', 'formula-rate-shipping' ) . '</a>';
+
+			$links[] = $sponsor_link;
+			$links[] = $paypal_link;
+		}
+		return $links;
+	}
+	add_filter( 'plugin_row_meta', 'formula_rate_shipping_add_plugin_row_meta', 10, 2 );
 }
 
 
@@ -11909,7 +11935,26 @@ function formula_rate_shipping_init() {
 									</div>
 								</details>
 
-								</ol>
+								<!-- Support & Open Source Development -->
+								<div class="formula-support-box" style="margin-top: 20px; padding: 16px 20px; background: #fff5f8; border: 1px solid #fecdd3; border-radius: 8px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 14px;">
+									<div>
+										<div style="font-weight: 700; color: #9f1239; font-size: 13px; display: flex; align-items: center; gap: 6px;">
+											<span class="dashicons dashicons-heart" style="color: #e11d48; font-size: 16px; width: 16px; height: 16px;"></span>
+											<?php esc_html_e( 'Supporting Open Source Development', 'formula-rate-shipping' ); ?>
+										</div>
+										<p style="margin: 4px 0 0 0; font-size: 12px; color: #881337; line-height: 1.4;">
+											<?php esc_html_e( 'Formula Rate Shipping is 100% free and open-source under GPL v2 (MIT compatible). Your support helps fund maintenance, unit tests, and ongoing improvements.', 'formula-rate-shipping' ); ?>
+										</p>
+									</div>
+									<div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+										<a href="<?php echo esc_url( 'https://github.com/sponsors/remarkablepc?utm_source=formula-rate-shipping&utm_medium=admin-documentation' ); ?>" target="_blank" rel="noopener noreferrer" class="button" style="background: #ea4aaa; color: #ffffff; border-color: #d946ef; font-weight: 600; text-decoration: none; display: inline-flex; align-items: center; gap: 5px; height: 32px; line-height: 30px;">
+											<span class="dashicons dashicons-heart" style="font-size: 14px; width: 14px; height: 14px; line-height: 1; vertical-align: -1px;"></span> <?php esc_html_e( 'Sponsor on GitHub', 'formula-rate-shipping' ); ?>
+										</a>
+										<a href="<?php echo esc_url( 'https://www.paypal.com/ncp/payment/EKH76RTYHH24S' ); ?>" target="_blank" rel="noopener noreferrer" class="button" style="background: #0070ba; color: #ffffff; border-color: #005ea6; font-weight: 600; text-decoration: none; display: inline-flex; align-items: center; gap: 5px; height: 32px; line-height: 30px;">
+											<span class="dashicons dashicons-money-alt" style="font-size: 14px; width: 14px; height: 14px; line-height: 1; vertical-align: -1px;"></span> <?php esc_html_e( 'Donate via PayPal / Venmo', 'formula-rate-shipping' ); ?>
+										</a>
+									</div>
+								</div>
 
 							</div>
 

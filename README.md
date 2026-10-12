@@ -1,5 +1,13 @@
 # Formula Rate Shipping for WooCommerce (v0.70.5)
 
+[![License: GPL v2 (MIT compatible)](https://img.shields.io/badge/License-GPLv2%20%2F%20MIT-blue.svg)](https://www.gnu.org/licenses/gpl-2.0)
+[![WordPress](https://img.shields.io/badge/WordPress-5.0%2B-21759b.svg?logo=wordpress)](https://wordpress.org/)
+[![WooCommerce](https://img.shields.io/badge/WooCommerce-3.0%2B-96588a.svg?logo=woocommerce)](https://woocommerce.com/)
+[![PHP](https://img.shields.io/badge/PHP-7.4%2B-777bb4.svg?logo=php)](https://www.php.net/)
+[![Release](https://img.shields.io/badge/version-0.70.5-green.svg)](https://github.com/remarkablepc/FormulaRateShipping/releases)
+[![Sponsor @remarkablepc](https://img.shields.io/badge/Sponsor-GitHub%20Sponsors-ea4aaa?logo=githubsponsors)](https://github.com/sponsors/remarkablepc?utm_source=formula-rate-shipping&utm_medium=github-readme)
+[![Donate PayPal](https://img.shields.io/badge/Donate-PayPal%20%2F%20Venmo-00457C?logo=paypal)](https://www.paypal.com/ncp/payment/EKH76RTYHH24S)
+
 **Formula Rate Shipping** is a powerful, flexible WooCommerce shipping method plugin that lets you construct custom dynamic shipping and handling formulas, set priority rules by product category, tag, attribute, or variation, apply location and regional overrides, and test everything in real-time with an interactive simulator.
 
 ---
@@ -476,6 +484,19 @@ if([product="Hardcover"], 5.00, 3.00)
 
 ---
 
-## License
+## Supporting Open Source Development
 
-Licensed under GPL-2.0+. Free for personal and commercial WooCommerce stores.
+Formula Rate Shipping is 100% free and open-source software under the GPLv2 (MIT compatible) license. There are no paid feature paywalls, subscription nag screens, or telemetry tracking.
+
+If this plugin saves you time, simplifies your store configuration, or solved your shipping challenges, please consider sponsoring ongoing development:
+
+* [💖 Sponsor @remarkablepc on GitHub Sponsors](https://github.com/sponsors/remarkablepc?utm_source=formula-rate-shipping&utm_medium=github-readme)
+* [☕ Donate via PayPal / Venmo](https://www.paypal.com/ncp/payment/EKH76RTYHH24S)
+
+---
+
+## License & Copyright
+
+Copyright (c) 2026 RemarkablePC / David Hewitt.
+
+Licensed under the [GNU General Public License v2.0 or later (MIT compatible)](LICENSE). Free for personal and commercial WooCommerce stores.
