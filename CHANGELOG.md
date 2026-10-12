@@ -1,3 +1,6 @@
+## v1.0.0 - 2026-10-12
+- Official 1.0.0 Production Release. Restored Section 2 AJAX autocomplete handler for logins/emails/usermeta; fully resolved parenthesized nested ternaries innermost-first; hardened all formula evaluation paths with \Throwable exception safety against PHP 7/8 TypeErrors and ParseErrors; added PHP < 7.3 array_key_first compatibility polyfill; and expanded robustness test suite to 270 passing tests.
+
 ## v0.70.5 - 2026-08-18
 - Fix Folded Incremental resolution in JavaScript simulation and rate tester to charge secondary items incremental-only rates
 

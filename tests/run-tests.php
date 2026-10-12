@@ -276,13 +276,14 @@ assert_equals( 'discount: amount is negative', -5.00, $GLOBALS['formula_shipping
 assert_equals( 'discount: label', 'Credit', $GLOBALS['formula_shipping_current_fees'][0]['label'] );
 
 // ---------------------------------------------------------------
-// Time & date placeholders (computed against current date)
+// Time & date placeholders (computed against current date in WP timezone)
 // ---------------------------------------------------------------
-$today_md    = date( 'm-d' );
-$today_name  = date( 'l' );
-$today_hour  = (int) date( 'G' );
-$today_month = (int) date( 'n' );
-$is_weekend  = ( (int) date( 'N' ) >= 6 ) ? 1 : 0;
+$ref_ts      = function_exists( 'current_time' ) ? current_time( 'timestamp' ) : time();
+$today_md    = date( 'm-d', $ref_ts );
+$today_name  = date( 'l', $ref_ts );
+$today_hour  = (int) date( 'G', $ref_ts );
+$today_month = (int) date( 'n', $ref_ts );
+$is_weekend  = ( (int) date( 'N', $ref_ts ) >= 6 ) ? 1 : 0;
 $not_today   = ( '01-01' === $today_md ) ? '01-02' : '01-01';
 
 assert_equals( 'time: [hour]', $today_hour, eval_formula( '[hour]' ) );

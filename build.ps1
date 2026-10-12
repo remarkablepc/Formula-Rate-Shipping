@@ -186,6 +186,9 @@ if (Test-Path $ReadmeMdFile) {
     $ReadmeMdContent = $ReadmeMdContent -replace '(?i)(# Formula Rate Shipping for WooCommerce \(v)[0-9]+(?:\.[0-9]+)+(\))', ('${1}' + $NewVersion + '${2}')
     $ReadmeMdContent = $ReadmeMdContent -replace '(?i)(\*\*Version\s+)[0-9]+(?:\.[0-9]+)+', ('${1}' + $NewVersion)
     $ReadmeMdContent = $ReadmeMdContent -replace '(?i)(formula-rate-shipping-v)[0-9]+(?:\.[0-9]+)+(\.zip)', ('${1}' + $NewVersion + '${2}')
+    $ReadmeMdContent = $ReadmeMdContent -replace '(?i)(badge\/version-)[0-9]+(?:\.[0-9]+)+(-green\.svg)', ('${1}' + $NewVersion + '${2}')
+    $ReadmeMdContent = $ReadmeMdContent -replace '(?i)(releases\/download\/v)[0-9]+(?:\.[0-9]+)+(\/)', ('${1}' + $NewVersion + '${2}')
+    $ReadmeMdContent = $ReadmeMdContent -replace '(?i)(formula-rate-shipping\.zip\s*\(v)[0-9]+(?:\.[0-9]+)+(\))', ('${1}' + $NewVersion + '${2}')
     [System.IO.File]::WriteAllText($ReadmeMdFile, $ReadmeMdContent, $Utf8NoBom)
     Write-Host "[OK] Updated $ReadmeMdFile to version $NewVersion" -ForegroundColor Green
 }

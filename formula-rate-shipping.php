@@ -3,7 +3,7 @@
  * Plugin Name:       Formula Rate Shipping
  * Plugin URI:        https://github.com/remarkablepc/Formula-Rate-Shipping
  * Description:       Calculate dynamic shipping and handling rates using custom formulas, priority item rules (Categories, Tags & Attributes), location overrides, and an interactive real-time tester.
- * Version:           0.70.5
+ * Version:           1.0.0
  * Author:            RemarkablePC
  * Author URI:        https://remarkablepc.com/
  * License:           GPL-2.0-or-later
@@ -21,7 +21,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 // Define Plugin Constants
-defined( 'FORMULA_RATE_SHIPPING_VERSION' ) || define( 'FORMULA_RATE_SHIPPING_VERSION', '0.70.5' );
+defined( 'FORMULA_RATE_SHIPPING_VERSION' ) || define( 'FORMULA_RATE_SHIPPING_VERSION', '1.0.0' );
 defined( 'FORMULA_RATE_SHIPPING_FILE' ) || define( 'FORMULA_RATE_SHIPPING_FILE', __FILE__ );
 defined( 'FORMULA_RATE_SHIPPING_BASENAME' ) || define( 'FORMULA_RATE_SHIPPING_BASENAME', plugin_basename( __FILE__ ) );
 
@@ -1639,7 +1639,7 @@ class Formula_Evaluator {
 			} elseif ( preg_match( '/formula\s*=\s*[\'"]([^\'"]+)[\'"]/i', $attr_str, $m ) ) {
 				try {
 					$fee_amount = floatval( self::evaluate( $m[1], $contents ) );
-				} catch ( Exception $e ) {
+				} catch ( \Throwable $e ) {
 					$fee_amount = 0.0;
 				}
 			}
@@ -1681,7 +1681,7 @@ class Formula_Evaluator {
 
 			try {
 				$val = floatval( self::evaluate( $on_expr, $contents, $context ) );
-			} catch ( Exception $e ) {
+			} catch ( \Throwable $e ) {
 				$val = 0.0;
 			}
 
@@ -1766,7 +1766,7 @@ class Formula_Evaluator {
 
 			try {
 				$val = floatval( self::evaluate( $on_expr, $contents, $context ) );
-			} catch ( Exception $e ) {
+			} catch ( \Throwable $e ) {
 				$val = 0.0;
 			}
 
@@ -1824,7 +1824,7 @@ class Formula_Evaluator {
 				$from_val = intval( self::evaluate( $from_expr, $contents, $context ) );
 				$to_val   = intval( self::evaluate( $to_expr, $contents, $context ) );
 				$step_val = max( 1, intval( self::evaluate( $step_expr, $contents, $context ) ) );
-			} catch ( Exception $e ) {
+			} catch ( \Throwable $e ) {
 				return '0';
 			}
 
@@ -1844,7 +1844,7 @@ class Formula_Evaluator {
 				try {
 					$step_result = floatval( self::evaluate( $step_formula, $contents, $context ) );
 					$total += $step_result;
-				} catch ( Exception $e ) {
+				} catch ( \Throwable $e ) {
 					// skip on error
 				}
 			}
@@ -2472,7 +2472,7 @@ class Formula_Evaluator {
 
 			return $result != 0 ? 1 : 0;
 
-		} catch ( Exception $e ) {
+		} catch ( \Throwable $e ) {
 
 			return 0;
 
@@ -2524,14 +2524,17 @@ class Formula_Evaluator {
 
 	public static function resolve_ternary( $formula ) {
 
-		// Resolve ternary expressions innermost-first. Supports simple and chained
-		// ternaries (e.g. 0 ? 6 : 0 ? 7 : 8). Parenthesized nesting is not fully
-		// supported by the tokenizer; any residual ternary syntax is caught by the
-		// downstream validation (and never crashes thanks to the \Throwable guard
-		// in evaluate_simple()). We process left-to-right repeatedly until stable.
-
 		$max_iterations = 50;
 
+		// 1. Resolve parenthesized ternary subexpressions innermost-first: ( condition ? true : false )
+		$paren_iterations = 0;
+		while ( preg_match( '/\(\s*([^()]+?\?[^()]+?:[^()]+?)\s*\)/', $formula, $paren_match ) && $paren_iterations < $max_iterations ) {
+			$paren_iterations++;
+			$resolved_inner = self::resolve_ternary( $paren_match[1] );
+			$formula        = substr_replace( $formula, $resolved_inner, strpos( $formula, $paren_match[0] ), strlen( $paren_match[0] ) );
+		}
+
+		// 2. Resolve simple and chained ternaries left-to-right repeatedly until stable.
 		$iteration = 0;
 
 		while ( preg_match( '/([^?:]+)\s*\?\s*([^?:]+?)\s*:\s*([^?:]+)/', $formula, $ternary_match ) && $iteration < $max_iterations ) {
@@ -3469,7 +3472,7 @@ public static function evaluate( $formula, $contents ) {
 
 			return self::evaluate( $expr, array() );
 
-		} catch ( Exception $e ) {
+		} catch ( \Throwable $e ) {
 
 			// Fallback: try PHP eval for simple expressions
 
@@ -7356,7 +7359,7 @@ function formula_rate_shipping_init() {
 
 								Formula_Evaluator::evaluate( $ship_formula, $sample_contents );
 
-							} catch ( Exception $e ) {
+							} catch ( \Throwable $e ) {
 
 								$formula_error = $e->getMessage();
 
@@ -7370,7 +7373,7 @@ function formula_rate_shipping_init() {
 
 								Formula_Evaluator::evaluate( $hand_formula, $sample_contents );
 
-							} catch ( Exception $e ) {
+							} catch ( \Throwable $e ) {
 
 								$formula_error = $e->getMessage();
 
@@ -7686,7 +7689,7 @@ function formula_rate_shipping_init() {
 
 								Formula_Evaluator::evaluate( $ship_formula, $sample_contents );
 
-							} catch ( Exception $e ) {
+							} catch ( \Throwable $e ) {
 
 								$formula_error = $e->getMessage();
 
@@ -7700,7 +7703,7 @@ function formula_rate_shipping_init() {
 
 								Formula_Evaluator::evaluate( $hand_formula, $sample_contents );
 
-							} catch ( Exception $e ) {
+							} catch ( \Throwable $e ) {
 
 								$formula_error = $e->getMessage();
 
@@ -12104,7 +12107,7 @@ function formula_rate_shipping_init() {
 
 							$ship_cost = Formula_Evaluator::evaluate( $ship_f, $matching_items );
 
-						} catch ( Exception $e ) {}
+						} catch ( \Throwable $e ) {}
 
 					}
 
@@ -12114,7 +12117,7 @@ function formula_rate_shipping_init() {
 
 							$hand_cost = Formula_Evaluator::evaluate( $hand_f, $matching_items );
 
-						} catch ( Exception $e ) {}
+						} catch ( \Throwable $e ) {}
 
 					}
 
@@ -12136,7 +12139,7 @@ function formula_rate_shipping_init() {
 
 						$single_items = array();
 
-						$first_k = array_key_first( $matching_items );
+						$first_k = function_exists( 'array_key_first' ) ? array_key_first( $matching_items ) : ( ! empty( $matching_items ) ? key( $matching_items ) : null );
 
 						if ( null !== $first_k ) {
 
@@ -12150,7 +12153,7 @@ function formula_rate_shipping_init() {
 
 								$base_ship = Formula_Evaluator::evaluate( $ship_f, $single_items );
 
-							} catch ( Exception $e ) {}
+							} catch ( \Throwable $e ) {}
 
 						}
 
@@ -12174,7 +12177,7 @@ function formula_rate_shipping_init() {
 
 								$incremental = max( 0.0, $two_ship - $base_ship );
 
-							} catch ( Exception $e ) {}
+							} catch ( \Throwable $e ) {}
 
 						}
 
@@ -12264,7 +12267,7 @@ function formula_rate_shipping_init() {
 
 						$ship_cost = Formula_Evaluator::evaluate( $default_table_ship, $uncategorized_items );
 
-					} catch ( Exception $e ) {}
+					} catch ( \Throwable $e ) {}
 
 				}
 
@@ -12274,7 +12277,7 @@ function formula_rate_shipping_init() {
 
 						$hand_cost = Formula_Evaluator::evaluate( $default_table_hand, $uncategorized_items );
 
-					} catch ( Exception $e ) {}
+					} catch ( \Throwable $e ) {}
 
 				}
 
@@ -12296,7 +12299,7 @@ function formula_rate_shipping_init() {
 
 					$single_items = array();
 
-					$first_k = array_key_first( $uncategorized_items );
+					$first_k = function_exists( 'array_key_first' ) ? array_key_first( $uncategorized_items ) : ( ! empty( $uncategorized_items ) ? key( $uncategorized_items ) : null );
 
 					if ( null !== $first_k ) {
 
@@ -12310,7 +12313,7 @@ function formula_rate_shipping_init() {
 
 							$base_ship = Formula_Evaluator::evaluate( $default_table_ship, $single_items );
 
-						} catch ( Exception $e ) {}
+						} catch ( \Throwable $e ) {}
 
 					}
 
@@ -12334,7 +12337,7 @@ function formula_rate_shipping_init() {
 
 							$incremental = max( 0.0, $two_ship - $base_ship );
 
-						} catch ( Exception $e ) {}
+						} catch ( \Throwable $e ) {}
 
 					}
 
@@ -12550,7 +12553,7 @@ function formula_rate_shipping_init() {
 
 								$l_ship = Formula_Evaluator::evaluate( $rule['shipping_formula'], $contents );
 
-							} catch ( Exception $e ) {}
+							} catch ( \Throwable $e ) {}
 
 						}
 
@@ -12560,7 +12563,7 @@ function formula_rate_shipping_init() {
 
 								$l_hand = Formula_Evaluator::evaluate( $rule['handling_formula'], $contents );
 
-							} catch ( Exception $e ) {}
+							} catch ( \Throwable $e ) {}
 
 						}
 
@@ -16037,7 +16040,7 @@ if ( ! function_exists( 'formula_shipping_export_handler' ) ) {
 
 			'plugin'    => 'formula-rate-shipping',
 
-			'version'   => '0.70.5',
+			'version'   => '1.0.0',
 
 			'exported'  => current_time( 'Y-m-d H:i:s' ),
 
@@ -16500,16 +16503,70 @@ if ( ! function_exists( 'formula_rate_shipping_custom_no_shipping_message' ) ) {
 
 
 /**
+ * AJAX handler for autocompleting Section 2 user logins, emails, and user meta keys.
+ */
+if ( ! function_exists( 'formula_shipping_search_targets_handler' ) ) {
+	function formula_shipping_search_targets_handler() {
+		check_ajax_referer( 'formula_shipping_import_export', 'nonce' );
 
+		if ( ! current_user_can( 'manage_woocommerce' ) ) {
+			wp_send_json_error( array( 'message' => 'Permission denied.' ) );
+		}
 
+		$target_type = isset( $_POST['type'] ) ? sanitize_text_field( $_POST['type'] ) : '';
+		$term        = isset( $_POST['term'] ) ? sanitize_text_field( $_POST['term'] ) : '';
 
+		if ( empty( $term ) || strlen( $term ) < 1 ) {
+			wp_send_json_success( array( 'results' => array() ) );
+		}
+
+		$results = array();
+
+		if ( 'user_login' === $target_type || 'user_email' === $target_type ) {
+			$user_query = new \WP_User_Query( array(
+				'search'         => '*' . esc_attr( $term ) . '*',
+				'search_columns' => array( 'user_login', 'user_email', 'user_nicename' ),
+				'number'         => 15,
+				'fields'         => array( 'ID', 'user_login', 'user_email' ),
+			) );
+
+			$users = $user_query->get_results();
+			if ( ! empty( $users ) ) {
+				foreach ( $users as $u ) {
+					if ( 'user_login' === $target_type ) {
+						$results[] = array(
+							'value' => $u->user_login,
+							'label' => $u->user_login . ' (' . $u->user_email . ')',
+						);
+					} else {
+						$results[] = array(
+							'value' => $u->user_email,
+							'label' => $u->user_email . ' (' . $u->user_login . ')',
+						);
+					}
+				}
+			}
+		} elseif ( 'user_meta_key' === $target_type ) {
+			global $wpdb;
+			$like = '%' . $wpdb->esc_like( $term ) . '%';
+			$meta_keys = $wpdb->get_col( $wpdb->prepare(
+				"SELECT DISTINCT meta_key FROM {$wpdb->usermeta} WHERE meta_key LIKE %s LIMIT 15",
+				$like
+			) );
+
+			if ( ! empty( $meta_keys ) ) {
+				foreach ( $meta_keys as $mk ) {
+					$results[] = array(
+						'value' => $mk,
+						'label' => $mk,
+					);
+				}
+			}
+		}
 
 		wp_send_json_success( array( 'results' => $results ) );
-
 	}
-
 	add_action( 'wp_ajax_formula_shipping_search_targets', 'formula_shipping_search_targets_handler' );
-
 }
 
 
@@ -16606,7 +16663,7 @@ if ( ! function_exists( 'formula_shipping_validate_formula_handler' ) ) {
 
 			wp_send_json_success( array( 'valid' => true ) );
 
-		} catch ( Exception $e ) {
+		} catch ( \Throwable $e ) {
 
 			wp_send_json_success(
 

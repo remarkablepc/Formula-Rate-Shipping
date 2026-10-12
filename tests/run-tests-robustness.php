@@ -114,13 +114,10 @@ assert_equals( 'nested: if inside if (true/false)', 4.00, eval_formula( 'if(1, i
 assert_equals( 'nested: if inside if (false)', 5.00, eval_formula( 'if(0, if(1, 3.00, 4.00), 5.00)' ) );
 // Chained (non-parenthesized) nested ternary works in the engine.
 assert_equals( 'nested: chained ternary', 8.00, eval_formula( '0 ? 6.00 : 0 ? 7.00 : 8.00' ) );
-// Parenthesized nested ternary must NOT crash (the @eval \Throwable guard fixes
-// a previous fatal \ParseError). It evaluates to 0.0 rather than fully resolving.
-// Parenthesized ternary does not fully resolve but must NOT throw a fatal
-// \ParseError (the @eval \Throwable guard fixes a previous crash). The engine
-// returns a controlled Formula_Error / 0 instead.
-assert_true( 'nested: parenthesized ternary no-crash', eval_formula( '1 ? (0 ? 6.00 : 7.00) : 8.00' ) instanceof Formula_Error || 0.0 === (float) eval_formula( '1 ? (0 ? 6.00 : 7.00) : 8.00' ) );
-assert_true( 'nested: parenthesized ternary false no-crash', eval_formula( '0 ? 6.00 : (0 ? 7.00 : 8.00)' ) instanceof Formula_Error || 0.0 === (float) eval_formula( '0 ? 6.00 : (0 ? 7.00 : 8.00)' ) );
+// Parenthesized nested ternary now fully resolves:
+assert_equals( 'nested: parenthesized ternary inner resolve', 7.00, eval_formula( '1 ? (0 ? 6.00 : 7.00) : 8.00' ) );
+assert_equals( 'nested: parenthesized ternary false branch resolve', 8.00, eval_formula( '0 ? 6.00 : (0 ? 7.00 : 8.00)' ) );
+assert_equals( 'nested: parenthesized ternary compound resolve', 12.00, eval_formula( '(1 ? 5.00 : 3.00) + (0 ? 2.00 : 7.00)' ) );
 
 // --- [scale] step parameter ---
 // Base $25 up to 50 lbs, then +$5 per 10 lbs beyond. 65 lbs → 15 extra → 2 steps → $35.

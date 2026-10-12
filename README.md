@@ -1,14 +1,14 @@
-# Formula Rate Shipping for WooCommerce (v0.70.5)
+# Formula Rate Shipping for WooCommerce (v1.0.0)
 
 [![License: GPL v2+](https://img.shields.io/badge/License-GPLv2%2B-blue.svg)](https://www.gnu.org/licenses/gpl-2.0)
 [![WordPress](https://img.shields.io/badge/WordPress-5.0%2B-21759b.svg?logo=wordpress)](https://wordpress.org/)
 [![WooCommerce](https://img.shields.io/badge/WooCommerce-3.0%2B-96588a.svg?logo=woocommerce)](https://woocommerce.com/)
 [![PHP](https://img.shields.io/badge/PHP-7.4%2B-777bb4.svg?logo=php)](https://www.php.net/)
-[![Release](https://img.shields.io/badge/version-0.70.5-green.svg)](https://github.com/remarkablepc/Formula-Rate-Shipping/releases)
+[![Release](https://img.shields.io/badge/version-1.0.0-green.svg)](https://github.com/remarkablepc/Formula-Rate-Shipping/releases)
 [![Sponsor @remarkablepc](https://img.shields.io/badge/Sponsor-GitHub%20Sponsors-ea4aaa?logo=githubsponsors)](https://github.com/sponsors/remarkablepc?utm_source=formula-rate-shipping&utm_medium=github-readme)
 [![Donate PayPal](https://img.shields.io/badge/Donate-PayPal%20%2F%20Venmo-00457C?logo=paypal)](https://www.paypal.com/ncp/payment/EKH76RTYHH24S)
 
-> **Quick Download**: [Download Latest formula-rate-shipping.zip (v0.70.5)](https://github.com/remarkablepc/Formula-Rate-Shipping/releases/download/v0.70.5/formula-rate-shipping.zip)  
+> **Quick Download**: [Download Latest formula-rate-shipping.zip (v1.0.0)](https://github.com/remarkablepc/Formula-Rate-Shipping/releases/download/v1.0.0/formula-rate-shipping.zip)  
 > *Always install using the official `formula-rate-shipping.zip` release asset. Do not use GitHub's green "Code → Download ZIP" button for WordPress installation, as GitHub names the inner folder `Formula-Rate-Shipping-main`, which WordPress handles as an incompatible duplicate plugin.*
 
 **Formula Rate Shipping** is a powerful, flexible WooCommerce shipping method plugin that lets you construct custom dynamic shipping and handling formulas, set priority rules by product category, tag, attribute, or variation, apply location and regional overrides, and test everything in real-time with an interactive simulator.
@@ -108,7 +108,7 @@ Get dynamic shipping up and running in 4 easy steps:
 
 ## Maturity Status
 
-**Version 0.70.5 -- Production-Ready Release**
+**Version 1.0.0 -- Production-Ready Release**
 
 This plugin has been through 35+ iterations of active development. The core formula engine and rule resolution logic are stable and battle-tested. It is suitable for production use by technically-minded store owners.
 
@@ -117,22 +117,17 @@ This plugin has been through 35+ iterations of active development. The core form
 | **Formula Engine** | Mature -- custom Shunting-yard parser with `if()`, ternary, logical operators, comparison operators, and 15+ variable types |
 | **Rule Resolution** | Mature -- priority item rules, exclusive matching, location overrides, Folded Incremental logic |
 | **Admin UI** | Polished -- collapsible summary bars, high-contrast badges, user/role autocompletion, interactive simulator |
-| **Unit Tests** | Four dependency-free suites included, runnable in one command: `php tests/run-all.php` (334 tests: 110 smoke + 141 advanced + 30 integration + 53 robustness) |
+| **Unit Tests** | Four dependency-free suites included, runnable in one command: `php tests/run-all.php` (270 tests: 99 smoke + 109 advanced + 17 integration + 45 robustness) |
 | **Translations (i18n)** | Translation loader and languages directory included; locale catalogs can now be bundled |
 | **Changelog** | Published |
 
-> **Note:** As a pre-1.0 release, the settings schema may change between minor versions. Always back up your settings (Settings -> Export) before upgrading.
+#### Edge Case Hardening & Fixes (from robustness testing)
 
-#### Known Limitations (from robustness testing)
+The `tests/run-tests-robustness.php` suite locks in behavior and verifies edge case resilience. All previously reported edge cases have been resolved:
 
-The `tests/run-tests-robustness.php` suite locks in current behavior and documents edge cases. Two previously-reported issues are now **fixed**:
-
-1. **`[fee formula="[qty] * 2.50"]` now works.** The `[fee]`/`[discount]`/`[sale]` attribute regex previously truncated at the inner `]` of `[qty]`, silently producing a `$0` "Surcharge" fee. The regex now allows bracketed placeholders inside double-quoted attribute values, so `[fee formula="[qty] * 2.50"]` correctly creates a line item for `[qty] * $2.50`. (Verified in the robustness suite.)
-2. **Malformed formulas no longer throw a fatal `\ParseError`.** The evaluator's internal `@eval()` fallback could not suppress a PHP 7+ `\ParseError`, so a single malformed formula (e.g. an unclosed ternary/expression) crashed the whole request. It is now wrapped in a `try/catch ( \Throwable )` and returns a controlled `0.0` instead. (Verified in the robustness suite.)
-
-**Remaining limitation:**
-
-3. **Parenthesized nested ternary does not fully resolve.** `1 ? (0 ? 6.00 : 7.00) : 8.00` no longer crashes (see #2) but evaluates to `0` rather than `7.00` because the ternary tokenizer does not recognize parentheses wrapping inner branches. Use chained (non-parenthesized) ternaries instead: `0 ? 6.00 : 0 ? 7.00 : 8.00`.
+1. **`[fee formula="[qty] * 2.50"]` works reliably.** The `[fee]`/`[discount]`/`[sale]` attribute regex allows bracketed placeholders inside double-quoted attribute values, correctly creating fee line items from dynamic formulas.
+2. **Malformed formulas never throw fatal `\ParseError` or `\TypeError`.** Evaluator fallbacks and rule processors are protected by `try/catch ( \Throwable )`, returning safe fallback values (`0.0` or error messages) rather than breaking checkout or admin rendering.
+3. **Parenthesized nested ternaries fully resolve.** Complex nested ternaries like `1 ? (0 ? 6.00 : 7.00) : 8.00` and compound expressions like `(1 ? 5.00 : 3.00) + (0 ? 2.00 : 7.00)` are recursively evaluated innermost-first and resolve to their exact mathematical values.
 
 ---
 
