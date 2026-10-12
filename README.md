@@ -12,17 +12,85 @@
 
 ---
 
-## Why This Plugin?
+## 📖 The Origin Story: Why We Built This
 
-Most WooCommerce shipping plugins fall into two camps: **table-rate** (rigid lookup tables) or **flat-rate** (one-size-fits-all). Formula Rate Shipping is neither. It gives you three capabilities that no other free plugin combines:
+> *"I have worked with ministries, non-profits, independent publishers, and community organizations for years. Every single one had unique, nuanced ways they needed to handle shipping—media mail categories, mixed literature and heavy study volumes, donor appreciation bundles, volunteer discounts, and regional exceptions. But **nothing was ever a one-size-fits-all solution**.*
+> 
+> *These organizations didn't have the budget for \$300/year subscription plugins or complicated carrier API contracts with minimum volume thresholds. Yet every free option out there was either painfully rigid (simple table lookups where one edge-case breaks the whole cart) or severely limited.*
+> 
+> *Store owners were constantly forced to choose between overcharging their supporters or eating the shipping costs themselves. So I built the plugin we have always needed: 100% free, open-source, mathematically unconstrained, and equipped with the flexibility to solve real-world mixed shipping once and for all."*  
+> — **David Hewitt**, RemarkablePC
 
-1. **A Full Formula Engine** -- Write dynamic shipping rules as mathematical expressions with variables, conditionals, and logical operators. A single rule can express logic that would require dozens of table-rate rows: `if([user="Subscriber"] AND [category="books"], 0.00, [qty] * 3.50 + [rate percent=5 min_fee=2])`.
+---
 
-2. **The "Folded Incremental" Resolution** -- A unique algorithm for mixed carts. Standard plugins either sum every rule (inflating costs) or apply only the highest rule (ignoring secondary items). Folded Incremental charges the primary item's base rate plus only the *incremental* additional-item rates for lighter items -- the mathematically fair cost of shipping a mixed box.
+## ⚡ Standout Features & Architectural Highlights
 
-3. **User-Aware Conditional Shipping** -- Formulas can check the logged-in user's role, email, or login. Enable membership-tiered shipping, free shipping for registered users, VIP surcharges, and guest-vs-customer pricing -- all without a separate membership plugin.
+What sets **Formula Rate Shipping** apart from every other shipping plugin in the WooCommerce ecosystem?
 
-**Ideal for:** Book sellers, print-on-demand stores, membership sites, and any merchant shipping mixed-weight or mixed-type products.
+### 1. 📦 The "Folded Incremental" Resolution (Unique Algorithm)
+Standard WooCommerce shipping plugins fail miserably when customers purchase mixed item types:
+* **The "Sum Everything" Trap**: Adds each item's individual base shipping rate together. A customer ordering 1 heavy book ($5 base) and 2 light pamphlets ($2 base each) gets hit with an absurd $9 shipping bill for a single small package.
+* **The "Highest Rate Only" Flaw**: Only charges for the heaviest item ($5) and completely ignores secondary items, forcing the store owner to absorb the packaging and weight costs of additional goods.
+
+**How Folded Incremental Solves This:**
+1. **Primary Item Sets the Base**: The item matching the rule with the highest base shipping rate is designated as the "Primary Item". It establishes the base package shipping rate and handling fee.
+2. **Secondary Items are "Folded In"**: Instead of charging their full standalone base rates, lighter items are gently folded in by adding only their **marginal additional-item increment** (e.g., +$0.75 instead of full $2.00).
+3. **The Result**: The mathematically fair, true cost of packing and shipping a mixed box—protecting store margins without alienating customers at checkout.
+
+> **Real-World Example:**
+> A customer buys **1 x Hardcover Book** ($5.00 base, $3.50 additional, $3.50 handling) and **1 x Mini-Book** ($1.50 base, $0.75 additional, $1.25 handling):
+> * **Base Package Fee**: $5.00 (Hardcover Base)
+> * **Max Handling Fee**: $3.50 (Hardcover Handling)
+> * **Folded Mini-Book Rate**: +$0.75 (Mini-Book additional increment, rather than the full $1.50)
+> * **Total Shipping & Handling**: **$9.25** (instead of $11.25 if summed, or $8.50 if secondary items were ignored).
+
+---
+
+### 2. 🧮 Custom Shunting-Yard Mathematical Parser (Zero Regex Hackery)
+Most "formula" plugins rely on brittle string replacement or insecure PHP `eval()` calls that crash your entire site on a single syntax mistake. Formula Rate Shipping features a custom, tokenized **Shunting-Yard expression evaluator**:
+* **Complete Arithmetic**: Standard math operators (`+`, `-`, `*`, `/`, `%`) plus exponentiation (`^`) for non-linear discount curves.
+* **Logical & Comparison Operators**: Full support for `<`, `>`, `<=`, `>=`, `==`, `!=`, `AND`, `OR`, and `NOT`.
+* **Advanced Range & Set Matching**: Native `IN ("CA", "OR", "WA")`, `BETWEEN 5 AND 50`, and `CONTAINS "Book"`.
+* **Conditionals & Ternaries**: Write dynamic branch logic like `if([weight] > 10, 15.00, 7.50)` or chained ternaries (`[qty] > 5 ? 0.00 : 4.99`).
+* **Built-In Math Functions**: `min()`, `max()`, `ceil()`, `floor()`, `round()`, and `abs()`.
+* **Safe Fallback Execution**: Wrapped in `try/catch (\Throwable)` protection so malformed syntax never throws fatal PHP errors or breaks the customer checkout flow.
+
+---
+
+### 3. 👤 User-Role, Membership & Donor-Aware Shipping
+No need to purchase expensive membership or dynamic pricing extensions. Formula Rate Shipping natively understands WordPress user context directly within formulas:
+* Free shipping for supporters or donors: `if([user="Donor"] OR [user="Subscriber"], 0.00, 5.95)`
+* Surcharges for guest checkout vs registered customers: `if([user_role="guest"], 7.50, 4.50)`
+* User login and email pattern targeting: `[user_email]` and `[user_login]`.
+
+---
+
+### 4. 🏷️ Priority Item Rules with Exclusive Trapping
+* Define targeted rate and handling formulas by **Category**, **Tag**, **Attribute**, or **Variation**.
+* **Exclusive Matching Trapping**: Once a product matches a top-priority rule, it is captured and excluded from lower-priority tiers to prevent double-charging or rule collision.
+
+---
+
+### 5. 🌍 Location & Regional Overrides
+* Target by Country, State or Province, City, or ZIP code patterns (including wildcards).
+* Accepts 2-letter ISO codes (`US`), 3-letter codes (`USA`), and full country names (`"United States"`, `'United Kingdom'`).
+* Automatic international detection: `[is_international]` automatically determines cross-border shipments against your store origin.
+* **Split Device & OS Targeting**: Optional per-rule targeting by device (`mobile`, `desktop`) or operating system (`Win10`, `Win11`, `macOS`, `iOS`, `Android`).
+
+---
+
+### 6. 🧪 Interactive Real-Time Test Simulator (Card 4)
+Never test shipping formulas blind on a live customer checkout:
+* Built-in 2-row stacked visual test cart directly inside the WooCommerce Admin settings screen.
+* Test any combination of products, weights, quantities, destinations, and customer user roles without leaving the page.
+* Real-time calculation feedback with **step-by-step mathematical trace logs** showing exactly which rules matched and how every variable evaluated.
+
+---
+
+### 7. 🛡️ Zero Database Bloat & 334-Test Verification Harness
+* **Zero Custom Database Tables**: Operates 100% within standard WooCommerce shipping options. Clean, lightweight, and leaves zero residual database bloat upon uninstallation.
+* **Settings Portability**: One-click JSON backup and restore covering all general, location, and item rule configurations.
+* **334 Automated Tests**: Built and verified across 4 independent test suites (Smoke, Advanced, Integration, and Robustness).
 
 ---
 
@@ -77,39 +145,6 @@ The `tests/run-tests-robustness.php` suite locks in current behavior and documen
 - PHP 7.0+ (recommended: PHP 8.0+)
 
 ---
-
-## The "Folded Incremental" Resolution Concept (Unique Feature)
-
-### Why is this unique?
-Standard shipping plugins are usually very rigid when resolving multiple rules for mixed carts. They force you to choose between:
-- **Summing everything** (which inflates shipping costs astronomically).
-- **Applying only the first/highest rule** (which completely ignores the cost of shipping secondary items).
-
-This plugin introduces the **Folded Incremental** logic -- a unique concept designed for merchants who ship mixed item types (e.g., combining heavy hardcovers with light mini-books or accessories).
-
-### How it works:
-1. **Primary Item Sets the Base**: The item matching the rule with the highest base shipping rate is chosen as the "Primary Item". It sets the base shipping rate and the highest handling fee for the box.
-2. **Lighter Items are Folded In**: Instead of charging their full base rate, secondary/lighter items are "folded" in by charging only their **incremental additional-item rates** (e.g., the additional item fee rather than the full base fee).
-
-#### Real-World Example:
-A customer buys **1 x Hardcover** ($5.00 base, $3.50 additional, $3.50 handling) and **1 x Mini-Book** ($1.50 base, $0.75 additional, $1.25 handling):
-- **Base Package Fee**: $5.00 (Hardcover Base)
-- **Max Handling Fee**: $3.50 (Hardcover Handling)
-- **Folded Mini-Book Rate**: +$0.75 (Mini-Book Additional rate, instead of the full $1.50)
-- **Total Shipping & Handling**: **$9.25** (instead of $11.25 if summed, or $8.50 if ignored).
-
----
-
-## Key Features
-
-- **Custom Mathematical Formula Engine**: Write dynamic formulas using standard math operators (`+`, `-`, `*`, `/`, `%`), variables (`[qty]`, `[cost]`, `[weight]`), and conditional logic (`if()`, ternary `? :`).
-- **Formula Auto-Parser Validation**: Validates and auto-checks formula syntax on `Enter` or when losing focus (`blur`), avoiding constant background requests while typing or scrolling.
-- **Priority Item-Specific Rules**: Define targeted shipping & handling formulas for specific Categories, Tags, Attributes, or Variations.
-- **Exclusive Item Matching**: Once a product matches a top-priority rule, it is captured and excluded from lower-priority rules to prevent double-counting.
-- **Location & Regional Overrides**: Override rates by Country, State or Province, City, or ZIP Code patterns. Section 2 uses side-by-side Country, State or Province, and City / ZIP / Pattern fields on one line. Accepts 2-letter/3-letter ISO country codes (`US`, `CA`, `GB`, `USA`) as well as full country names (`Canada`, `France`, `"United States"`, `'United Kingdom'`). Multi-word country names support single (`'...'`) or double (`"..."`) quotes. Entering a single country dynamically reveals the State or Province box, while selecting multiple countries or `ALL` hides it and expands the fields full-width flush to the right border.
-- **Split Device + OS Targeting**: Device and operating system targeting are entered separately. Device accepts values like `mobile`, `desktop`, `tablet`, or `ALL`. OS accepts aliases like `Win10`, `Win11`, `Ventura`, `Sonoma`, `Monterey`, `iOS 17`, `Android 14`, `Linux`, and `ChromeOS`.
-- **Interactive Real-Time Simulator**: Built-in 2-row stacked visual test cart in the WordPress Admin settings page to instantly simulate calculations for any customer location and product combination without horizontal scrolling.
-- **Backup & Restore**: One-click JSON settings export and import covering all general, location, and item rule configurations.
 
 ## Code Organization
 
