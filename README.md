@@ -8,6 +8,9 @@
 [![Sponsor @remarkablepc](https://img.shields.io/badge/Sponsor-GitHub%20Sponsors-ea4aaa?logo=githubsponsors)](https://github.com/sponsors/remarkablepc?utm_source=formula-rate-shipping&utm_medium=github-readme)
 [![Donate PayPal](https://img.shields.io/badge/Donate-PayPal%20%2F%20Venmo-00457C?logo=paypal)](https://www.paypal.com/ncp/payment/EKH76RTYHH24S)
 
+> **Quick Download**: [Download Latest formula-rate-shipping.zip (v0.70.5)](https://github.com/remarkablepc/Formula-Rate-Shipping/releases/download/v0.70.5/formula-rate-shipping.zip)  
+> *Always install using the official `formula-rate-shipping.zip` release asset. Do not use GitHub's green "Code → Download ZIP" button for WordPress installation, as GitHub names the inner folder `Formula-Rate-Shipping-main`, which WordPress handles as an incompatible duplicate plugin.*
+
 **Formula Rate Shipping** is a powerful, flexible WooCommerce shipping method plugin that lets you construct custom dynamic shipping and handling formulas, set priority rules by product category, tag, attribute, or variation, apply location and regional overrides, and test everything in real-time with an interactive simulator.
 
 ---
@@ -477,11 +480,11 @@ if([product="Hardcover"], 5.00, 3.00)
 
 ## Installation & Setup
 
-1. Download `formula-rate-shipping-v0.70.5.zip`.
+1. Download `formula-rate-shipping.zip` from the [Latest Release](https://github.com/remarkablepc/Formula-Rate-Shipping/releases/latest).
 2. Log into your WordPress Admin Dashboard.
 3. Navigate to **Plugins** -> **Add New** -> **Upload Plugin**.
-4. Upload `formula-rate-shipping-v0.70.5.zip` and click **Activate**.
-5. Go to **WooCommerce** -> **Settings** -> **Shipping** -> **Formula Rate Shipping** to configure your formulas and rules.
+4. Upload `formula-rate-shipping.zip` and click **Install Now**, then **Activate**.
+5. Go to **WooCommerce** -> **Settings** -> **Shipping** -> **Shipping Zones** to add and configure **Formula Rate Shipping**.
 
 > **Tip on WooCommerce Shipping Cache:** WooCommerce caches shipping rates in customer sessions. When updating settings or testing live rates, change the customer ZIP code on the checkout page or clear transients under **WooCommerce -> Status -> Tools -> Clear transients**.
 
