@@ -2,9 +2,9 @@
 
 Thank you for using **Formula Rate Shipping for WooCommerce**!
 
-## Passion Project Notice & Support Boundary
+## Open Source Notice & Support Boundary
 
-Formula Rate Shipping is an independent, free open-source e-commerce plugin created and maintained by **David @ RemarkablePC**. 
+Formula Rate Shipping is independent, free open-source e-commerce software created and maintained by **David @ RemarkablePC**. 
 
 Because this tool is provided 100% free of charge and maintained during personal time:
 
