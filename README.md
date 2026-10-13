@@ -523,6 +523,15 @@ If this plugin saves you time, simplifies your store configuration, or solved yo
 
 ---
 
+## 💬 Community & Peer Discussions
+
+Have questions about setting up a custom formula, calculating dimensional weight, or ideas for shipping rules? Join fellow WooCommerce store owners in our community forum:
+* **[GitHub Discussions](https://github.com/remarkablepc/Formula-Rate-Shipping/discussions)**
+
+*(Note: Formula Rate Shipping is an independent, free open-source passion project provided as-is without individual, one-on-one technical support or custom formula consulting. Store owners are encouraged to help one another and share formula examples in the discussion forum).*
+
+---
+
 ## License & Copyright
 
 Copyright (c) 2026 RemarkablePC / David Hewitt.
